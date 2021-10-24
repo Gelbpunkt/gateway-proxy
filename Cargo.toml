@@ -1,0 +1,44 @@
+[package]
+name = "gateway-proxy"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+dashmap = "4.0"
+env_logger = { version = "0.9", default-features = false, features = [
+    "termcolor",
+    "atty",
+    "humantime"
+] }
+futures-util = { version = "0.3", default-features = false }
+libc = { version = "0.2", default-features = false }
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+simd-json = { version = "0.4", default-features = false, features = [
+    "serde_impl"
+] }
+# Better match twilight-gateway here
+tokio-tungstenite = { version = "0.14", default-features = false }
+tokio = { version = "1", default-features = false, features = [
+    "macros",
+    "rt-multi-thread"
+] }
+twilight-gateway = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = [
+    "zlib-simd",
+    "rustls-webpki-roots",
+    "tracing"
+] }
+twilight-gateway-queue = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = ["rustls-webpki-roots"] }
+twilight-http = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = [
+    "rustls-webpki-roots"
+] }
+twilight-model = { git = "https://github.com/twilight-rs/twilight.git", branch = "next" }
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = true
+opt-level = 3
+panic = "abort"
