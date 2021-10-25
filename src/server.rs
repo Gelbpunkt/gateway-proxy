@@ -9,11 +9,11 @@ use tokio_tungstenite::{
     tungstenite::{Error, Message},
 };
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
-use twilight_model::gateway::{event::GatewayEventDeserializer, payload::outgoing::Identify};
+use twilight_model::gateway::event::GatewayEventDeserializer;
 
 use std::net::SocketAddr;
 
-use crate::state::State;
+use crate::{model::Identify, state::State};
 
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
@@ -120,12 +120,7 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
                     }
                 };
 
-                let (shard_id, shard_count) = if let Some(shard_data) = identify.d.shard {
-                    (shard_data[0], shard_data[1])
-                } else {
-                    warn!("Client sent identify without shard ID, disconnecting");
-                    break;
-                };
+                let (shard_id, shard_count) = (identify.d.shard[0], identify.d.shard[1]);
 
                 if shard_count != state.shard_count {
                     warn!("Shard count from client identify mismatched, disconnecting");

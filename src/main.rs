@@ -18,6 +18,7 @@ use std::{env::set_var, error::Error, lazy::SyncOnceCell, process::exit, sync::A
 mod cache;
 mod config;
 mod dispatch;
+mod model;
 mod server;
 mod state;
 
