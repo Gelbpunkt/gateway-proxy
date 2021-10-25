@@ -141,7 +141,10 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
 
                 let identify: Identify = match simd_json::from_str(&mut payload) {
                     Ok(identify) => identify,
-                    Err(_) => continue,
+                    Err(e) => {
+                        warn!("Invalid identify payload: {}", e);
+                        continue;
+                    }
                 };
 
                 let (shard_id, shard_count) = if let Some(shard_data) = identify.d.shard {

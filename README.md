@@ -14,6 +14,8 @@ When a client sends an `IDENTIFY` payload, it takes the shard ID specified and r
 
 It also sends you self-crafted, but valid `READY` and `GUILD_CREATE`/`GUILD_DELETE` payloads at startup to keep your guild state up to date, just like Discord does, even though it doesn't reconnect when you do internally.
 
+Because the `IDENTIFY` is not actually controlled by the client side, activity data must be specified in the config file and will have no effect when sent in the client's `IDENTIFY` payload.
+
 ## Configuration
 
 Create a file `config.json` and fill in these fields:
@@ -22,7 +24,14 @@ Create a file `config.json` and fill in these fields:
 {
   "log_level": "info",
   "token": "",
-  "intents": 32511
+  "intents": 32511,
+  "port": 7878,
+  "shards": null, // Use gateway default
+  "activity": {
+    "type": 0,
+    "name": "with kubernetes"
+  },
+  "status": "idle"
 }
 ```
 

@@ -7,7 +7,3 @@ rustflags = ["-L", "native=/usr/lib", "-Z", "mir-opt-level=3", "-C", "target-cpu
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-Z", "mir-opt-level=3", "-C", "target-cpu=native"]
-
-[target.x86_64-unknown-freebsd]
-linker = "clang"
-rustflags = ["-C", "link-args=--sysroot=./freebsd_sysroot --target=x86_64-unknown-freebsd12"]

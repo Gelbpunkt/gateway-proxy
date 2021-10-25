@@ -11,6 +11,7 @@ use log::{debug, error};
 use twilight_gateway::{EventTypeFlags, Shard};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
+use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
 use std::{env::set_var, error::Error, process::exit, sync::Arc};
 
@@ -62,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let shards: state::Shards = DashMap::with_capacity(shard_count as usize);
 
     for shard_id in 0..shard_count {
-        let (shard, events) = Shard::builder(config.token.clone(), config.intents)
+        let mut builder = Shard::builder(config.token.clone(), config.intents)
             .queue(queue.clone())
             .shard(shard_id, shard_count)?
             .gateway_url(Some(gateway.url.clone()))
@@ -72,8 +73,16 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                     | EventTypeFlags::GUILD_CREATE
                     | EventTypeFlags::GUILD_DELETE
                     | EventTypeFlags::GUILD_UPDATE,
-            )
-            .build();
+            );
+
+        if let Some(activity) = config.activity.clone() {
+            // Will only error if activity are empty, so we can unwrap
+            builder = builder.presence(
+                UpdatePresencePayload::new(vec![activity], false, None, config.status).unwrap(),
+            );
+        }
+
+        let (shard, events) = builder.build();
 
         shard.start().await?;
 

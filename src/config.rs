@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use twilight_gateway::Intents;
+use twilight_model::gateway::presence::{Activity, Status};
 
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
@@ -16,6 +17,10 @@ pub struct Config {
     pub port: u16,
     #[serde(default)]
     pub shards: Option<u64>,
+    #[serde(default)]
+    pub activity: Option<Activity>,
+    #[serde(default = "default_status")]
+    pub status: Status,
 }
 
 fn default_log_level() -> String {
@@ -24,6 +29,10 @@ fn default_log_level() -> String {
 
 fn default_port() -> u16 {
     7878
+}
+
+fn default_status() -> Status {
+    Status::Online
 }
 
 pub enum ConfigError {
