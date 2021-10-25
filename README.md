@@ -31,7 +31,8 @@ Create a file `config.json` and fill in these fields:
     "type": 0,
     "name": "with kubernetes"
   },
-  "status": "idle"
+  "status": "idle",
+  "backpressure": 100
 }
 ```
 
@@ -48,4 +49,4 @@ The proxy uses zlib-stream for its connection to Discord's gateway, but only sup
 ## Known Issues / TODOs
 
 - Sequence numbers are very wrong
-- Some assumptions about state are being made that shouldn't be to ensure safety
+- Some clients think they are lagging because the proxy does not request heartbeats by itself

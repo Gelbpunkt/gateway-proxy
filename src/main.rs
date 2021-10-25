@@ -1,22 +1,23 @@
-#![feature(option_result_contains)]
+#![feature(option_result_contains, once_cell)]
 #![deny(clippy::pedantic)]
 #![allow(
     clippy::module_name_repetitions,
     clippy::cast_possible_truncation,
     clippy::large_enum_variant
 )]
-use dashmap::DashMap;
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
+use tokio::sync::{broadcast, Notify};
 use twilight_gateway::{EventTypeFlags, Shard};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
-use std::{env::set_var, error::Error, process::exit, sync::Arc};
+use std::{env::set_var, error::Error, lazy::SyncOnceCell, process::exit, sync::Arc};
 
 mod cache;
 mod config;
+mod dispatch;
 mod server;
 mod state;
 
@@ -60,7 +61,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     );
 
     // Create all shards
-    let shards: state::Shards = DashMap::with_capacity(shard_count as usize);
+    let mut shards: state::Shards = Vec::with_capacity(shard_count as usize);
 
     for shard_id in 0..shard_count {
         let mut builder = Shard::builder(config.token.clone(), config.intents)
@@ -82,19 +83,32 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             );
         }
 
+        // To support multiple listeners on the same shard
+        // we need to make a broadcast channel with the events
+        let (broadcast_tx, _) = broadcast::channel(config.backpressure);
+
         let (shard, events) = builder.build();
 
         shard.start().await?;
 
-        let shard_status = state::ShardStatus {
+        let shard_status = Arc::new(state::ShardStatus {
             shard,
-            events,
-            first_time_used: true,
-            ready: None,
+            events: broadcast_tx.clone(),
+            ready: SyncOnceCell::new(),
+            ready_set: Notify::new(),
             guilds: cache::GuildCache::new(),
-        };
+        });
 
-        shards.insert(shard_id, shard_status);
+        // Now pipe the events into the broadcast
+        // and handle state updates for the guild cache
+        // and set the ready event if received
+        tokio::spawn(dispatch::dispatch_events(
+            events,
+            shard_status.clone(),
+            broadcast_tx,
+        ));
+
+        shards.push(shard_status);
 
         debug!("Created shard {} of {} total", shard_id, shard_count);
     }

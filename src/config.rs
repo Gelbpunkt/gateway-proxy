@@ -21,6 +21,8 @@ pub struct Config {
     pub activity: Option<Activity>,
     #[serde(default = "default_status")]
     pub status: Status,
+    #[serde(default = "default_backpressure")]
+    pub backpressure: usize,
 }
 
 fn default_log_level() -> String {
@@ -33,6 +35,10 @@ fn default_port() -> u16 {
 
 fn default_status() -> Status {
     Status::Online
+}
+
+fn default_backpressure() -> usize {
+    100
 }
 
 pub enum ConfigError {

@@ -8,7 +8,7 @@ use tokio_tungstenite::{
     accept_async,
     tungstenite::{Error, Message},
 };
-use twilight_gateway::{shard::raw_message::Message as TwilightMessage, Event};
+use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 use twilight_model::gateway::{event::GatewayEventDeserializer, payload::outgoing::Identify};
 
 use std::net::SocketAddr;
@@ -23,72 +23,47 @@ async fn forward_shard(
     mut shard_id_rx: UnboundedReceiver<u64>,
     stream_writer: UnboundedSender<Message>,
     mut shard_send_rx: UnboundedReceiver<TwilightMessage>,
-    mut shutdown_reader_recv: UnboundedReceiver<()>,
     state: State,
 ) {
     let shard_id = shard_id_rx.recv().await.unwrap();
-    // TODO: Shard could already be connected
-    let (_, mut shard_status) = state.shards.remove(&shard_id).unwrap();
+    let shard_status = state.shards[shard_id as usize].clone();
+
+    let mut event_receiver = shard_status.events.subscribe();
 
     debug!("Starting to send events to client");
 
-    if !shard_status.first_time_used {
-        // TODO: Should be safe but check
-        let ready_payload = shard_status
-            .guilds
-            .get_ready_payload(shard_status.ready.clone().unwrap());
+    if shard_status.ready.get().is_none() {
+        shard_status.ready_set.notified().await;
+    }
 
-        if let Ok(serialized) = simd_json::to_string(&ready_payload) {
-            debug!("Sending newly created READY");
+    // This is safe since ready is now set
+    let ready_payload = shard_status
+        .guilds
+        .get_ready_payload(shard_status.ready.get().unwrap().clone());
+
+    if let Ok(serialized) = simd_json::to_string(&ready_payload) {
+        debug!("Sending newly created READY");
+        let _res = stream_writer.send(Message::Text(serialized));
+    };
+
+    for payload in shard_status.guilds.get_guild_payloads() {
+        if let Ok(serialized) = simd_json::to_string(&payload) {
+            trace!("Sending newly created GUILD_CREATE/GUILD_DELETE payload");
             let _res = stream_writer.send(Message::Text(serialized));
         };
-
-        for payload in shard_status.guilds.get_guild_payloads() {
-            if let Ok(serialized) = simd_json::to_string(&payload) {
-                trace!("Sending newly created GUILD_CREATE/GUILD_DELETE payload");
-                let _res = stream_writer.send(Message::Text(serialized));
-            };
-        }
     }
 
     loop {
         tokio::select! {
-            Some(event) = shard_status.events.next() => {
-                if let Event::ShardPayload(body) = event {
-                    let payload = unsafe { String::from_utf8_unchecked(body.bytes) };
-                    // The event is always valid
-                    let deserializer = GatewayEventDeserializer::from_json(&payload).unwrap();
-
-                    if deserializer.op() == 0 && !deserializer.event_type_ref().contains(&"RESUMED") {
-                        trace!("Sending payload to client: {:?}", payload);
-                        let _res = stream_writer.send(Message::Text(payload));
-                    }
-                } else if let Event::Ready(mut ready) = event {
-                    ready.guilds.clear();
-                    shard_status.ready = Some(*ready);
-                } else if let Event::GuildCreate(guild_create) = event {
-                    shard_status.guilds.insert(guild_create.0);
-                } else if let Event::GuildDelete(guild_delete) = event {
-                    shard_status.guilds.remove(guild_delete.id);
-                } else if let Event::GuildUpdate(guild_update) = event {
-                    shard_status.guilds.update(guild_update.0);
-                }
+            Ok(payload) = event_receiver.recv() => {
+                let _res = stream_writer.send(Message::Text(payload));
             },
             Some(command) = shard_send_rx.recv() => {
                 // Has to be done here because else shard would be moved
                 let _res = shard_status.shard.send(command).await;
             },
-            _ = shutdown_reader_recv.recv() => {
-                break;
-            }
         };
     }
-
-    debug!("Event stream ended or shutdown requested");
-
-    shard_status.first_time_used = false;
-
-    state.shards.insert(shard_id, shard_status);
 }
 
 async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
@@ -108,15 +83,13 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
     });
 
     // Set up a task that will dump all the messages from the shard to the client
-    let (shutdown_reader, shutdown_reader_recv) = unbounded_channel();
     let (shard_id_tx, shard_id_rx) = unbounded_channel();
     let (shard_send_tx, shard_send_rx) = unbounded_channel();
 
-    tokio::spawn(forward_shard(
+    let shard_forward_task = tokio::spawn(forward_shard(
         shard_id_rx,
         stream_writer.clone(),
         shard_send_rx,
-        shutdown_reader_recv,
         state.clone(),
     ));
 
@@ -142,7 +115,7 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
                 let identify: Identify = match simd_json::from_str(&mut payload) {
                     Ok(identify) => identify,
                     Err(e) => {
-                        warn!("Invalid identify payload: {}", e);
+                        warn!("Invalid identify payload: {:?}", e);
                         continue;
                     }
                 };
@@ -156,6 +129,11 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
 
                 if shard_count != state.shard_count {
                     warn!("Shard count from client identify mismatched, disconnecting");
+                    break;
+                }
+
+                if shard_id >= shard_count {
+                    warn!("Shard ID from client is out of range, disconnecting");
                     break;
                 }
 
@@ -178,7 +156,7 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
     }
 
     sink_task.abort();
-    let _res = shutdown_reader.send(());
+    shard_forward_task.abort();
 
     Ok(())
 }

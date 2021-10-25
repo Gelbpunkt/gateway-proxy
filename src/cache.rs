@@ -1,3 +1,4 @@
+use dashmap::DashMap;
 use serde::Serialize;
 use twilight_model::{
     gateway::{
@@ -7,8 +8,6 @@ use twilight_model::{
     guild::{Guild, PartialGuild, UnavailableGuild},
     id::GuildId,
 };
-
-use std::collections::HashMap;
 
 #[derive(Serialize)]
 pub struct Payload {
@@ -26,24 +25,24 @@ pub enum Event {
     GuildDelete(GuildDelete),
 }
 
-pub struct GuildCache(HashMap<GuildId, Guild>);
+pub struct GuildCache(DashMap<GuildId, Guild>);
 
 impl GuildCache {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(DashMap::new())
     }
 
-    pub fn insert(&mut self, guild_create: Guild) {
+    pub fn insert(&self, guild_create: Guild) {
         self.0.insert(guild_create.id, guild_create);
     }
 
-    pub fn remove(&mut self, guild_id: GuildId) {
+    pub fn remove(&self, guild_id: GuildId) {
         self.0.remove(&guild_id);
     }
 
-    pub fn update(&mut self, guild_update: PartialGuild) {
+    pub fn update(&self, guild_update: PartialGuild) {
         let guild = self.0.get_mut(&guild_update.id);
-        if let Some(guild) = guild {
+        if let Some(mut guild) = guild {
             // https://github.com/twilight-rs/twilight/blob/next/cache/in-memory/src/event/guild.rs#L181
             guild.afk_channel_id = guild_update.afk_channel_id;
             guild.afk_timeout = guild_update.afk_timeout;
@@ -78,7 +77,7 @@ impl GuildCache {
         let unavailable_guilds = self
             .0
             .iter()
-            .map(|(_, guild)| UnavailableGuild {
+            .map(|guild| UnavailableGuild {
                 id: guild.id,
                 unavailable: true, // For some reason Discord hardcodes this to true
             })
@@ -94,7 +93,7 @@ impl GuildCache {
     }
 
     pub fn get_guild_payloads(&self) -> impl Iterator<Item = Payload> + '_ {
-        self.0.iter().enumerate().map(|(i, (_, guild))| {
+        self.0.iter().enumerate().map(|(i, guild)| {
             if guild.unavailable {
                 let guild_delete = GuildDelete {
                     id: guild.id,
