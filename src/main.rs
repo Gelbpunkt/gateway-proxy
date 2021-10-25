@@ -6,6 +6,7 @@
     clippy::large_enum_variant
 )]
 use dashmap::DashMap;
+use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
 use twilight_gateway::{EventTypeFlags, Shard};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
@@ -18,8 +19,20 @@ mod config;
 mod server;
 mod state;
 
+pub extern "C" fn handler(_: c_int) {
+    std::process::exit(0);
+}
+
+unsafe fn set_os_handlers() {
+    signal(SIGINT, handler as extern "C" fn(_) as sighandler_t);
+    signal(SIGTERM, handler as extern "C" fn(_) as sighandler_t);
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+    // Exit on SIGINT/SIGTERM, used in Docker
+    unsafe { set_os_handlers() };
+
     let config = match config::load("config.json") {
         Ok(config) => config,
         Err(err) => {
