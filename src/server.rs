@@ -10,16 +10,13 @@ use tokio_tungstenite::{
     tungstenite::{Error, Message},
 };
 use twilight_gateway::{shard::raw_message::Message as TwilightMessage, Event};
-use twilight_model::{
-    gateway::{
-        event::GatewayEventDeserializer,
-        payload::{
-            incoming::{GuildCreate, GuildDelete, Ready},
-            outgoing::Identify,
-        },
-        OpCode,
+use twilight_model::gateway::{
+    event::GatewayEventDeserializer,
+    payload::{
+        incoming::{GuildCreate, GuildDelete, Ready},
+        outgoing::Identify,
     },
-    guild::UnavailableGuild,
+    OpCode,
 };
 
 use std::net::SocketAddr;
@@ -85,74 +82,19 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
         debug!("Starting to send events to client");
 
         if !shard_status.first_time_used {
-            let mut seq = 1;
-
-            let unavailable_guilds: Vec<UnavailableGuild> = shard_status
-                .guilds
-                .iter()
-                .map(|(_, guild)| UnavailableGuild {
-                    id: guild.id,
-                    unavailable: true, // For some reason Discord hardcodes this to true
-                })
-                .collect();
             // TODO: Should be safe but check
-            let mut ready = shard_status.ready.clone().unwrap();
-            ready.guilds = unavailable_guilds;
-            let ready_payload = ReadyPayload {
-                d: ready,
-                op: OpCode::Event,
-                t: String::from("READY"),
-                s: seq,
-            };
+            let ready_payload = shard_status
+                .guilds
+                .get_ready_payload(shard_status.ready.clone().unwrap());
 
             if let Ok(serialized) = simd_json::to_string(&ready_payload) {
                 debug!("Sending newly created READY");
                 let _ = stream_writer_copy.send(Message::Text(serialized));
             };
 
-            for guild_create in shard_status.guilds.iter().filter_map(|(_, guild)| {
-                if guild.unavailable {
-                    None
-                } else {
-                    Some(GuildCreate(guild.clone()))
-                }
-            }) {
-                seq += 1;
-
-                let guild_create_payload = GuildCreatePayload {
-                    d: guild_create,
-                    op: OpCode::Event,
-                    t: String::from("GUILD_CREATE"),
-                    s: seq,
-                };
-
-                if let Ok(serialized) = simd_json::to_string(&guild_create_payload) {
-                    trace!("Sending newly created GUILD_CREATE");
-                    let _ = stream_writer_copy.send(Message::Text(serialized));
-                };
-            }
-
-            for guild_delete in shard_status.guilds.iter().filter_map(|(_, guild)| {
-                if guild.unavailable {
-                    Some(GuildDelete {
-                        id: guild.id,
-                        unavailable: guild.unavailable,
-                    })
-                } else {
-                    None
-                }
-            }) {
-                seq += 1;
-
-                let guild_delete_payload = GuildDeletePayload {
-                    d: guild_delete,
-                    op: OpCode::Event,
-                    t: String::from("GULD_DELETE"),
-                    s: seq,
-                };
-
-                if let Ok(serialized) = simd_json::to_string(&guild_delete_payload) {
-                    trace!("Sending newly created GUILD_DELETE");
+            for payload in shard_status.guilds.get_guild_payloads() {
+                if let Ok(serialized) = simd_json::to_string(&payload) {
+                    trace!("Sending newly created GUILD_CREATE/GUILD_DELETE payload");
                     let _ = stream_writer_copy.send(Message::Text(serialized));
                 };
             }
@@ -174,41 +116,11 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
                         ready.guilds.clear();
                         shard_status.ready = Some(*ready);
                     } else if let Event::GuildCreate(guild_create) = event {
-                        shard_status.guilds.insert(guild_create.0.id, guild_create.0);
+                        shard_status.guilds.insert(guild_create.0);
                     } else if let Event::GuildDelete(guild_delete) = event {
                         shard_status.guilds.remove(&guild_delete.id);
                     } else if let Event::GuildUpdate(guild_update) = event {
-                        let update_guild = guild_update.0;
-                        let guild = shard_status.guilds.get_mut(&update_guild.id);
-                        if let Some(guild) = guild {
-                            // https://github.com/twilight-rs/twilight/blob/next/cache/in-memory/src/event/guild.rs#L181
-                            guild.afk_channel_id = update_guild.afk_channel_id;
-                            guild.afk_timeout = update_guild.afk_timeout;
-                            guild.banner = update_guild.banner.clone();
-                            guild.default_message_notifications = update_guild.default_message_notifications;
-                            guild.description = update_guild.description.clone();
-                            guild.features = update_guild.features.clone();
-                            guild.icon = update_guild.icon.clone();
-                            guild.max_members = update_guild.max_members;
-                            guild.max_presences = Some(update_guild.max_presences.unwrap_or(25000));
-                            guild.mfa_level = update_guild.mfa_level;
-                            guild.name = update_guild.name.clone();
-                            guild.nsfw_level = update_guild.nsfw_level;
-                            guild.owner = update_guild.owner;
-                            guild.owner_id = update_guild.owner_id;
-                            guild.permissions = update_guild.permissions;
-                            guild.preferred_locale = update_guild.preferred_locale.clone();
-                            guild.premium_tier = update_guild.premium_tier;
-                            guild
-                                .premium_subscription_count
-                                .replace(update_guild.premium_subscription_count.unwrap_or_default());
-                            guild.splash = update_guild.splash.clone();
-                            guild.system_channel_id = update_guild.system_channel_id;
-                            guild.verification_level = update_guild.verification_level;
-                            guild.vanity_url_code = update_guild.vanity_url_code.clone();
-                            guild.widget_channel_id = update_guild.widget_channel_id;
-                            guild.widget_enabled = update_guild.widget_enabled;
-                        }
+                        shard_status.guilds.update(guild_update.0);
                     }
                 },
                 Some(command) = shard_send_rx.recv() => {

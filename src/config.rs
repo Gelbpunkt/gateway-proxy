@@ -14,6 +14,8 @@ pub struct Config {
     pub intents: Intents,
     #[serde(default = "default_port")]
     pub port: u16,
+    #[serde(default)]
+    pub shards: Option<u64>,
 }
 
 fn default_log_level() -> String {

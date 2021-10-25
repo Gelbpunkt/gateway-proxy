@@ -4,8 +4,9 @@ use twilight_gateway::{EventTypeFlags, Shard};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 
-use std::{collections::HashMap, env::set_var, error::Error, process::exit, sync::Arc};
+use std::{env::set_var, error::Error, process::exit, sync::Arc};
 
+mod cache;
 mod config;
 mod server;
 mod state;
@@ -29,7 +30,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     // Check total shards required
     let gateway = client.gateway().authed().exec().await?.model().await?;
-    let shard_count = gateway.shards;
+
+    let shard_count = config.shards.unwrap_or(gateway.shards);
 
     // Set up a queue for the shards
     let queue: Arc<dyn Queue> = Arc::new(
@@ -60,12 +62,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             events,
             first_time_used: true,
             ready: None,
-            guilds: HashMap::new(),
+            guilds: cache::GuildCache::new(),
         };
 
         shards.insert(shard_id, shard_status);
 
-        debug!("Created shard {}/{}", shard_id, shard_count);
+        debug!("Created shard {} of {} total", shard_id, shard_count);
     }
 
     let state = Arc::new(state::StateInner {
