@@ -1,3 +1,10 @@
+#![feature(option_result_contains)]
+#![deny(clippy::pedantic)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::cast_possible_truncation,
+    clippy::large_enum_variant
+)]
 use dashmap::DashMap;
 use log::{debug, error};
 use twilight_gateway::{EventTypeFlags, Shard};

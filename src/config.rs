@@ -42,7 +42,7 @@ impl Display for ConfigError {
 
 pub fn load(path: &str) -> Result<Config, ConfigError> {
     let mut content = read_to_string(path).map_err(|_| ConfigError::NotFound(path.to_string()))?;
-    let config = simd_json::from_str(&mut content).map_err(|e| ConfigError::InvalidConfig(e))?;
+    let config = simd_json::from_str(&mut content).map_err(ConfigError::InvalidConfig)?;
 
     Ok(config)
 }
