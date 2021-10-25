@@ -1,6 +1,5 @@
 use futures_util::{SinkExt, StreamExt};
 use log::{debug, info, trace, warn};
-use serde::Serialize;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc::unbounded_channel,
@@ -10,14 +9,7 @@ use tokio_tungstenite::{
     tungstenite::{Error, Message},
 };
 use twilight_gateway::{shard::raw_message::Message as TwilightMessage, Event};
-use twilight_model::gateway::{
-    event::GatewayEventDeserializer,
-    payload::{
-        incoming::{GuildCreate, GuildDelete, Ready},
-        outgoing::Identify,
-    },
-    OpCode,
-};
+use twilight_model::gateway::{event::GatewayEventDeserializer, payload::outgoing::Identify};
 
 use std::net::SocketAddr;
 
@@ -26,30 +18,6 @@ use crate::state::State;
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
 const INVALID_SESSION: &str = r#"{"t":null,"s":null,"op":9,"d":false}"#;
-
-#[derive(Serialize)]
-struct ReadyPayload {
-    d: Ready,
-    op: OpCode,
-    t: String,
-    s: usize,
-}
-
-#[derive(Serialize)]
-struct GuildCreatePayload {
-    d: GuildCreate,
-    op: OpCode,
-    t: String,
-    s: usize,
-}
-
-#[derive(Serialize)]
-struct GuildDeletePayload {
-    d: GuildDelete,
-    op: OpCode,
-    t: String,
-    s: usize,
-}
 
 async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
     let stream = accept_async(stream).await?;
