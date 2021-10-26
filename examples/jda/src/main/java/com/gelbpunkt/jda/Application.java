@@ -27,8 +27,7 @@ public class Application {
                     .setSessionController(new GatewayController(config))
                     .enableIntents(GatewayIntent.GUILD_MEMBERS)
                     .setCompression(Compression.NONE)
-                    .setShardsTotal(2)
-                    .setShards(0, 1)
+                    .setShardsTotal(config.getShards())
                     .build();
             log.info("Intents: " + GatewayIntent.getRaw(manager.getGatewayIntents()));
             return manager;
