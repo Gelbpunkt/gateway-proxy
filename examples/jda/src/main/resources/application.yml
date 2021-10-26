@@ -1,0 +1,8 @@
+app:
+  token: ''
+  shards: 2
+  gateway: 'ws://ip:port'
+logging:
+  level:
+    net:
+      dv8tion: TRACE
