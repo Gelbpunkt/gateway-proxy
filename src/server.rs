@@ -12,7 +12,6 @@ use tokio_tungstenite::{
     },
 };
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
-use twilight_model::gateway::event::GatewayEventDeserializer;
 
 use std::{
     net::SocketAddr,
@@ -22,7 +21,9 @@ use std::{
     },
 };
 
-use crate::{model::Identify, state::State, zlib_sys::Compressor};
+use crate::{
+    deserializer::GatewayEventDeserializer, model::Identify, state::State, zlib_sys::Compressor,
+};
 
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
@@ -34,28 +35,36 @@ async fn forward_shard(
     mut shard_send_rx: UnboundedReceiver<TwilightMessage>,
     state: State,
 ) {
+    // Wait for the client's IDENTIFY to finish and acquire the shard ID
     let shard_id = shard_id_rx.recv().await.unwrap();
+    // Get a handle to the shard
     let shard_status = state.shards[shard_id as usize].clone();
 
+    // Fake sequence number for the client. We update packets to overwrite it
+    let mut seq: usize = 0;
+
+    // Subscribe to events for this shard
     let mut event_receiver = shard_status.events.subscribe();
 
     debug!("Starting to send events to client");
 
+    // If there is no READY received for the shard yet, wait for it
     if shard_status.ready.get().is_none() {
         shard_status.ready_set.notified().await;
     }
 
-    // This is safe since ready is now set
+    // Get a fake ready payload to send to the client
     let ready_payload = shard_status
         .guilds
-        .get_ready_payload(shard_status.ready.get().unwrap().clone());
+        .get_ready_payload(shard_status.ready.get().unwrap().clone(), &mut seq);
 
     if let Ok(serialized) = simd_json::to_string(&ready_payload) {
         debug!("Sending newly created READY");
         let _res = stream_writer.send(Message::Text(serialized));
     };
 
-    for payload in shard_status.guilds.get_guild_payloads() {
+    // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
+    for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
         if let Ok(serialized) = simd_json::to_string(&payload) {
             trace!("Sending newly created GUILD_CREATE/GUILD_DELETE payload");
             let _res = stream_writer.send(Message::Text(serialized));
@@ -64,7 +73,17 @@ async fn forward_shard(
 
     loop {
         tokio::select! {
-            Ok(payload) = event_receiver.recv() => {
+            Ok(event) = event_receiver.recv() => {
+                // A payload has arrived to be sent to the client
+                let (mut payload, sequence) = event;
+
+                // Overwrite the sequence number
+                if let Some((sequence_number, sequence_idx)) = sequence {
+                    seq += 1;
+                    let sequence_len = sequence_number.to_string().len();
+                    payload.replace_range(sequence_idx..sequence_idx + sequence_len, &seq.to_string());
+                }
+
                 let _res = stream_writer.send(Message::Text(payload));
             },
             Some(command) = shard_send_rx.recv() => {

@@ -16,6 +16,8 @@ It also sends you self-crafted, but valid `READY` and `GUILD_CREATE`/`GUILD_DELE
 
 Because the `IDENTIFY` is not actually controlled by the client side, activity data must be specified in the config file and will have no effect when sent in the client's `IDENTIFY` payload.
 
+It uses a minimal algorithm to replace the sequence numbers in incoming payloads with fake sequence numbers that are valid for the clients, but does not need to parse the JSON for that.
+
 ## Configuration
 
 Create a file `config.json` and fill in these fields:
@@ -62,6 +64,5 @@ Connecting is fairly simple, just hardcode the gateway URL in your client to `ws
 
 ## Known Issues / TODOs
 
-- Sequence numbers are very wrong
 - Some clients think they are lagging because the proxy does not request heartbeats by itself
 - `GUILD_CREATE` has more state that needs to be tracked. Probably voice states, threads, stickers, roles, members, emojis and channels (https://gist.github.com/Gelbpunkt/751189ef40e8fdbe4edd0ad671bb3f19)

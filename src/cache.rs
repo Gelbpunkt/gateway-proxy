@@ -77,7 +77,9 @@ impl GuildCache {
         }
     }
 
-    pub fn get_ready_payload(&self, mut ready: JsonObject) -> Payload {
+    pub fn get_ready_payload(&self, mut ready: JsonObject, sequence: &mut usize) -> Payload {
+        *sequence += 1;
+
         let unavailable_guilds = self
             .0
             .iter()
@@ -99,12 +101,17 @@ impl GuildCache {
             d: Event::Ready(ready),
             op: OpCode::Event,
             t: String::from("READY"),
-            s: 1,
+            s: *sequence,
         }
     }
 
-    pub fn get_guild_payloads(&self) -> impl Iterator<Item = Payload> + '_ {
-        self.0.iter().enumerate().map(|(i, guild)| {
+    pub fn get_guild_payloads<'a>(
+        &'a self,
+        sequence: &'a mut usize,
+    ) -> impl Iterator<Item = Payload> + 'a {
+        self.0.iter().map(move |guild| {
+            *sequence += 1;
+
             if guild.unavailable {
                 let guild_delete = GuildDelete {
                     id: guild.id,
@@ -115,7 +122,7 @@ impl GuildCache {
                     d: Event::GuildDelete(guild_delete),
                     op: OpCode::Event,
                     t: String::from("GUILD_DELETE"),
-                    s: 2 + i,
+                    s: *sequence,
                 }
             } else {
                 let guild_create = GuildCreate(guild.clone());
@@ -124,7 +131,7 @@ impl GuildCache {
                     d: Event::GuildCreate(guild_create),
                     op: OpCode::Event,
                     t: String::from("GUILD_CREATE"),
-                    s: 2 + i,
+                    s: *sequence,
                 }
             }
         })

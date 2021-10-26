@@ -3,16 +3,18 @@ use log::trace;
 use simd_json::Mutable;
 use tokio::sync::broadcast;
 use twilight_gateway::{shard::Events, Event};
-use twilight_model::gateway::event::GatewayEventDeserializer;
 
 use std::sync::Arc;
 
-use crate::{model::Ready, state::ShardStatus};
+use crate::{deserializer::GatewayEventDeserializer, model::Ready, state::ShardStatus};
+
+/// Payload string and index of the sequence number
+pub type BroadcastMessage = (String, Option<(u64, usize)>);
 
 pub async fn dispatch_events(
     mut events: Events,
     shard_status: Arc<ShardStatus>,
-    broadcast_tx: broadcast::Sender<String>,
+    broadcast_tx: broadcast::Sender<BroadcastMessage>,
 ) {
     while let Some(event) = events.next().await {
         match event {
@@ -20,11 +22,10 @@ pub async fn dispatch_events(
                 let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
                 // The event is always valid
                 let deserializer = GatewayEventDeserializer::from_json(&payload).unwrap();
+                let (op, sequence, event_type) = deserializer.into_parts();
 
                 // Use the raw JSON from READY to create a blank READY
-                if deserializer.event_type_ref().contains(&"READY") {
-                    // TODO: Ugly
-                    drop(deserializer);
+                if let Some(("READY", _)) = event_type {
                     let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
 
                     // Clear the guilds
@@ -42,11 +43,16 @@ pub async fn dispatch_events(
                     continue;
                 }
 
+                // Do not relay resumes
+                if let Some(("RESUMED", _)) = event_type {
+                    continue;
+                }
+
                 // We only want to relay dispatchable events, not RESUMEs and not READY
                 // because we fake a READY event
-                if deserializer.op() == 0 && !deserializer.event_type_ref().contains(&"RESUMED") {
+                if op.0 == 0 {
                     trace!("Sending payload to clients: {:?}", payload);
-                    let _res = broadcast_tx.send(payload);
+                    let _res = broadcast_tx.send((payload, sequence));
                 }
             }
             Event::GuildCreate(guild_create) => {
