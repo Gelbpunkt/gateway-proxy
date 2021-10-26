@@ -36,6 +36,20 @@ Create a file `config.json` and fill in these fields:
 }
 ```
 
+## Running
+
+Compiling this from source isn't the most fun, you'll need a nightly Rust compiler with the rust-src component installed. Then run `cargo build --release --target=MY_RUSTC_TARGET`, where `MY_RUSTC_TARGET` is probably `x86_64-unknown-linux-gnu`.
+
+Instead, I recommend running the Docker images that are prebuilt by CI.
+
+`docker.io/gelbpunkt/gateway-proxy:latest` requires a Haswell-family CPU or newer (due to AVX2) and will perform best, `docker.io/gelbpunkt/gateway-proxy:sandybridge` requires a Sandy Bridge-family CPU or newer and will perform slightly worse.
+
+To run the image, mount the config file at `/config.json`, for example:
+
+```bash
+docker run --rm -it -v /path/to/my/config.json:/config.json docker.io/gelbpunkt/gateway-proxy:latest
+```
+
 ## Connecting
 
 Connecting is fairly simple, just hardcode the gateway URL in your client to `ws://localhost:7878`. Make sure not to ratelimit your connections on your end.
@@ -50,5 +64,4 @@ Connecting is fairly simple, just hardcode the gateway URL in your client to `ws
 
 - Sequence numbers are very wrong
 - Some clients think they are lagging because the proxy does not request heartbeats by itself
-- Send `GUILD_MEMBER_UPDATE`s for the bot itself in each guild
 - `GUILD_CREATE` has more state that needs to be tracked. Probably voice states, threads, stickers, roles, members, emojis and channels (https://gist.github.com/Gelbpunkt/751189ef40e8fdbe4edd0ad671bb3f19)
