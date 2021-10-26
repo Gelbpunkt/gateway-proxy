@@ -1,7 +1,11 @@
 # I will only support x86_64 hosts because this allows for best hardware optimizations.
 # Compiling a Dockerfile for aarch64 should work but I won't support it myself.
+ARG TARGET_CPU="haswell"
+
 FROM docker.io/library/alpine:edge AS builder
+ARG TARGET_CPU
 ENV RUST_TARGET "x86_64-unknown-linux-musl"
+ENV RUSTFLAGS "-C target-cpu=${TARGET_CPU}"
 
 RUN apk upgrade && \
     apk add curl gcc g++ musl-dev cmake make && \
