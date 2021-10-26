@@ -1,0 +1,33 @@
+plugins {
+    id 'org.springframework.boot' version '2.5.6'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+}
+
+group = 'com.gelbpunkt'
+version = '0.0.1'
+sourceCompatibility = targetCompatibility = '8'
+
+repositories {
+    mavenCentral()
+    maven {
+        name 'm2-dv8tion'
+        url 'https://m2.dv8tion.net/releases'
+    }
+}
+
+dependencies {
+    implementation("net.dv8tion:JDA:4.3.0_339") {
+        exclude module: 'opus-java'
+    }
+    // -- Spring
+    implementation("org.springframework.boot:spring-boot-starter")
+    // -- Lombok and such
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
+}
