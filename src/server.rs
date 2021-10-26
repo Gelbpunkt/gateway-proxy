@@ -78,10 +78,9 @@ async fn forward_shard(
                 let (mut payload, sequence) = event;
 
                 // Overwrite the sequence number
-                if let Some((sequence_number, sequence_idx)) = sequence {
+                if let Some((_, sequence_range)) = sequence {
                     seq += 1;
-                    let sequence_len = sequence_number.to_string().len();
-                    payload.replace_range(sequence_idx..sequence_idx + sequence_len, &seq.to_string());
+                    payload.replace_range(sequence_range, &seq.to_string());
                 }
 
                 let _res = stream_writer.send(Message::Text(payload));

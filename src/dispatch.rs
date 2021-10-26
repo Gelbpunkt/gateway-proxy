@@ -4,12 +4,12 @@ use simd_json::Mutable;
 use tokio::sync::broadcast;
 use twilight_gateway::{shard::Events, Event};
 
-use std::sync::Arc;
+use std::{ops::Range, sync::Arc};
 
 use crate::{deserializer::GatewayEventDeserializer, model::Ready, state::ShardStatus};
 
 /// Payload string and index of the sequence number
-pub type BroadcastMessage = (String, Option<(u64, usize)>);
+pub type BroadcastMessage = (String, Option<(u64, Range<usize>)>);
 
 pub async fn dispatch_events(
     mut events: Events,
