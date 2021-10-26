@@ -17,8 +17,6 @@ repositories {
 }
 
 dependencies {
-    implementation("net.bytebuddy:byte-buddy:1.11.21")
-    implementation("net.bytebuddy:byte-buddy-agent:1.11.21")
     implementation("net.dv8tion:JDA:4.3.0_339") {
         exclude module: 'opus-java'
     }
