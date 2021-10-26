@@ -8,6 +8,8 @@ pub struct Identify {
 
 #[derive(Deserialize)]
 pub struct IdentifyInfo {
+    #[serde(default)]
+    pub compress: Option<bool>,
     pub shard: [u64; 2],
 }
 

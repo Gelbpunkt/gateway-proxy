@@ -5,15 +5,24 @@ use tokio::{
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
 };
 use tokio_tungstenite::{
-    accept_async,
-    tungstenite::{Error, Message},
+    accept_hdr_async,
+    tungstenite::{
+        handshake::server::{Request, Response},
+        Error, Message,
+    },
 };
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 use twilight_model::gateway::event::GatewayEventDeserializer;
 
-use std::net::SocketAddr;
+use std::{
+    net::SocketAddr,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-use crate::{model::Identify, state::State};
+use crate::{model::Identify, state::State, zlib_sys::Compressor};
 
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
@@ -67,16 +76,42 @@ async fn forward_shard(
 }
 
 async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
-    let stream = accept_async(stream).await?;
+    let use_zlib = Arc::new(AtomicBool::new(false));
+
+    let mut compress = Compressor::new(15);
+
+    let stream = accept_hdr_async(stream, |req: &Request, res: Response| {
+        // Check if the request URI asks for zlib compression
+        if let Some(query) = req.uri().query() {
+            if query.contains("compress=zlib-stream") {
+                use_zlib.store(true, Ordering::Relaxed);
+            }
+        }
+
+        Ok(res)
+    })
+    .await?;
+
     let (mut sink, mut stream) = stream.split();
 
     // Write all messages from a queue to the sink
-    let (stream_writer, mut stream_receiver) = unbounded_channel();
+    let (stream_writer, mut stream_receiver) = unbounded_channel::<Message>();
 
+    let use_zlib_clone = use_zlib.clone();
     let sink_task = tokio::spawn(async move {
         while let Some(msg) = stream_receiver.recv().await {
             trace!("Sending {:?}", msg);
-            sink.send(msg).await?;
+
+            if use_zlib_clone.load(Ordering::Relaxed) {
+                let mut compressed = Vec::with_capacity(msg.len());
+                compress
+                    .compress(&msg.into_data(), &mut compressed)
+                    .unwrap();
+
+                sink.send(Message::Binary(compressed)).await?;
+            } else {
+                sink.send(msg).await?;
+            }
         }
 
         Ok::<(), Error>(())
@@ -133,6 +168,10 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
                 }
 
                 trace!("Shard ID is {:?}", shard_id);
+
+                if let Some(compress) = identify.d.compress {
+                    use_zlib.store(compress, Ordering::Relaxed);
+                }
 
                 let _res = shard_id_tx.send(shard_id);
             }

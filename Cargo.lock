@@ -254,6 +254,7 @@ dependencies = [
  "futures-util",
  "halfbrown",
  "libc",
+ "libz-sys",
  "log",
  "serde",
  "simd-json",

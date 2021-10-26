@@ -26,7 +26,7 @@ Create a file `config.json` and fill in these fields:
   "token": "",
   "intents": 32511,
   "port": 7878,
-  "shards": null, // Use gateway default
+  "shards": null,
   "activity": {
     "type": 0,
     "name": "with kubernetes"
@@ -40,9 +40,9 @@ Create a file `config.json` and fill in these fields:
 
 Connecting is fairly simple, just hardcode the gateway URL in your client to `ws://localhost:7878`. Make sure not to ratelimit your connections on your end.
 
-## Caveats
+**Important:** The proxy detects `zlib-stream` query parameters and `compress` fields in your `IDENTIFY` payloads and will encode packets if they are enabled, just like Discord. This codes with CPU overhead and is likely not desired in localhost networking. Make sure to disable this if so.
 
-The proxy uses zlib-stream for its connection to Discord's gateway, but only supports plain JSON for communication with the client. To ensure this behaviour, all websocket messages are of `TEXT` type and not `BINARY`.
+## Caveats
 
 `RESUME`s will always result in a session invalidation because the proxy doesn't really track session IDs. Just reidentify, it's free.
 
@@ -50,3 +50,5 @@ The proxy uses zlib-stream for its connection to Discord's gateway, but only sup
 
 - Sequence numbers are very wrong
 - Some clients think they are lagging because the proxy does not request heartbeats by itself
+- Send `GUILD_MEMBER_UPDATE`s for the bot itself in each guild
+- `GUILD_CREATE` has more state that needs to be tracked. Probably voice states, threads, stickers, roles, members, emojis and channels (https://gist.github.com/Gelbpunkt/751189ef40e8fdbe4edd0ad671bb3f19)

@@ -3,7 +3,9 @@
 #![allow(
     clippy::module_name_repetitions,
     clippy::cast_possible_truncation,
-    clippy::large_enum_variant
+    clippy::cast_possible_wrap,
+    clippy::large_enum_variant,
+    clippy::cast_ptr_alignment
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
@@ -21,6 +23,7 @@ mod dispatch;
 mod model;
 mod server;
 mod state;
+mod zlib_sys;
 
 pub extern "C" fn handler(_: c_int) {
     std::process::exit(0);
