@@ -23,9 +23,6 @@ public class TestListener extends ListenerAdapter {
 
     @Override
     public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
-        if (event.getGuild().getIdLong() != 213044545825406976L) {
-            return;
-        }
         log.info("Message received: " + event.getMessage());
     }
 
