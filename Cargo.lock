@@ -252,6 +252,7 @@ dependencies = [
  "dashmap",
  "env_logger",
  "futures-util",
+ "halfbrown",
  "libc",
  "log",
  "serde",

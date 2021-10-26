@@ -1,13 +1,17 @@
 use dashmap::DashMap;
+use halfbrown::HashMap;
 use serde::Serialize;
+use simd_json::OwnedValue;
 use twilight_model::{
     gateway::{
-        payload::incoming::{GuildCreate, GuildDelete, Ready},
+        payload::incoming::{GuildCreate, GuildDelete},
         OpCode,
     },
-    guild::{Guild, PartialGuild, UnavailableGuild},
+    guild::{Guild, PartialGuild},
     id::GuildId,
 };
+
+use crate::model::JsonObject;
 
 #[derive(Serialize)]
 pub struct Payload {
@@ -20,7 +24,7 @@ pub struct Payload {
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Event {
-    Ready(Ready),
+    Ready(JsonObject),
     GuildCreate(GuildCreate),
     GuildDelete(GuildDelete),
 }
@@ -73,16 +77,23 @@ impl GuildCache {
         }
     }
 
-    pub fn get_ready_payload(&self, mut ready: Ready) -> Payload {
+    pub fn get_ready_payload(&self, mut ready: JsonObject) -> Payload {
         let unavailable_guilds = self
             .0
             .iter()
-            .map(|guild| UnavailableGuild {
-                id: guild.id,
-                unavailable: true, // For some reason Discord hardcodes this to true
+            .map(|guild| {
+                let mut value = HashMap::with_capacity(2);
+                value.insert(String::from("id"), OwnedValue::from(guild.id.to_string()));
+                value.insert(String::from("unavailable"), OwnedValue::from(true));
+
+                OwnedValue::from(value)
             })
             .collect();
-        ready.guilds = unavailable_guilds;
+
+        ready.insert(
+            String::from("guilds"),
+            OwnedValue::Array(unavailable_guilds),
+        );
 
         Payload {
             d: Event::Ready(ready),

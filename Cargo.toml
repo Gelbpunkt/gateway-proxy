@@ -12,6 +12,7 @@ env_logger = { version = "0.9", default-features = false, features = [
     "humantime"
 ] }
 futures-util = { version = "0.3", default-features = false }
+halfbrown = "0.1"
 libc = { version = "0.2", default-features = false }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }

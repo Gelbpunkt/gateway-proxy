@@ -1,15 +1,14 @@
 use tokio::sync::{broadcast, Notify};
 use twilight_gateway::Shard;
-use twilight_model::gateway::payload::incoming::Ready;
 
 use std::{lazy::SyncOnceCell, sync::Arc};
 
-use crate::cache::GuildCache;
+use crate::{cache::GuildCache, model::JsonObject};
 
 pub struct ShardStatus {
     pub shard: Shard,
     pub events: broadcast::Sender<String>,
-    pub ready: SyncOnceCell<Ready>,
+    pub ready: SyncOnceCell<JsonObject>,
     pub ready_set: Notify,
     pub guilds: GuildCache,
 }

@@ -71,7 +71,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .gateway_url(Some(gateway.url.clone()))
             .event_types(
                 EventTypeFlags::SHARD_PAYLOAD
-                    | EventTypeFlags::READY
                     | EventTypeFlags::GUILD_CREATE
                     | EventTypeFlags::GUILD_DELETE
                     | EventTypeFlags::GUILD_UPDATE,
