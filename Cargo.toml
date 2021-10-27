@@ -15,6 +15,7 @@ futures-util = { version = "0.3", default-features = false }
 halfbrown = "0.1"
 libc = { version = "0.2", default-features = false }
 log = "0.4"
+mimalloc = { version = "0.1", default-features = false, features = ["override"] }
 serde = { version = "1", features = ["derive"] }
 simd-json = { version = "0.4", default-features = false, features = [
     "serde_impl"

@@ -9,6 +9,7 @@
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
+use mimalloc::MiMalloc;
 use tokio::sync::{broadcast, Notify};
 use twilight_gateway::{EventTypeFlags, Shard};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
@@ -25,6 +26,9 @@ mod model;
 mod server;
 mod state;
 mod zlib_sys;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 pub extern "C" fn handler(_: c_int) {
     std::process::exit(0);
