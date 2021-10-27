@@ -17,8 +17,8 @@ halfbrown = "0.1"
 hyper = { version = "0.14", default-features = false, features = ["server", "http1", "http2"] }
 libc = { version = "0.2", default-features = false }
 log = "0.4"
-metrics = "0.17"
-metrics-exporter-prometheus = "0.6"
+metrics = { version = "0.17", default-features = false, features = ["std"] }
+metrics-exporter-prometheus = { version = "0.6", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = ["override"] }
 serde = { version = "1", features = ["derive"] }
 sha-1 = "0.9"

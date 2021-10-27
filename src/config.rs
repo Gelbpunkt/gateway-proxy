@@ -23,6 +23,8 @@ pub struct Config {
     pub status: Status,
     #[serde(default = "default_backpressure")]
     pub backpressure: usize,
+    #[serde(default)]
+    pub twilight_http_proxy: Option<String>,
 }
 
 fn default_log_level() -> String {

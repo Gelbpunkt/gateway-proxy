@@ -68,5 +68,4 @@ The proxy exposes Prometheus metrics at the `/metrics` endpoint. They contain ev
 
 ## Known Issues / TODOs
 
-- Some clients think they are lagging because the proxy does not request heartbeats by itself
 - `GUILD_CREATE` has more state that needs to be tracked. Probably voice states, threads, stickers, roles, members, emojis and channels (https://gist.github.com/Gelbpunkt/751189ef40e8fdbe4edd0ad671bb3f19)

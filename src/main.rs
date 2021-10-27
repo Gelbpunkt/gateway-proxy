@@ -64,7 +64,13 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
 
     // Set up a HTTPClient
-    let client = Arc::new(Client::new(config.token.clone()));
+    let mut client_builder = Client::builder().token(config.token.clone());
+
+    if let Some(http_proxy) = config.twilight_http_proxy {
+        client_builder = client_builder.proxy(http_proxy, true);
+    }
+
+    let client = Arc::new(client_builder.build());
 
     // Check total shards required
     let gateway = client.gateway().authed().exec().await?.model().await?;

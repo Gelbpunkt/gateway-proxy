@@ -2,7 +2,10 @@ use futures_util::StreamExt;
 use log::trace;
 use simd_json::Mutable;
 use tokio::{sync::broadcast, time::interval};
-use twilight_gateway::{shard::Events, Event};
+use twilight_gateway::{
+    shard::{Events, Stage},
+    Event,
+};
 
 use std::{ops::Range, sync::Arc, time::Duration};
 
@@ -26,7 +29,7 @@ pub async fn dispatch_events(
                 let (op, sequence, event_type) = deserializer.into_parts();
 
                 if let Some((event_name, _)) = event_type {
-                    metrics::increment_counter!("shard_events", "shard" => shard_id.to_string(), "event_type" => event_name.to_string());
+                    metrics::increment_counter!("gateway_shard_events", "shard" => shard_id.to_string(), "event_type" => event_name.to_string());
 
                     if event_name == "READY" {
                         // Use the raw JSON from READY to create a new blank READY
@@ -78,10 +81,24 @@ pub async fn shard_latency(shard_status: Arc<ShardStatus>) {
         interval.tick().await;
 
         if let Ok(info) = shard_status.shard.info() {
-            let latency = info.latency().recent().get(0);
-            if let Some(latency) = latency {
-                metrics::histogram!("shard_latency", latency.as_secs_f64(), "shard" => info.id().to_string());
-            }
+            // There is no way around this, sadly
+            let connection_status = match info.stage() {
+                Stage::Connected => 4.0,
+                Stage::Disconnected => 0.0,
+                Stage::Handshaking => 1.0,
+                Stage::Identifying => 2.0,
+                Stage::Resuming => 3.0,
+                _ => f64::NAN,
+            };
+
+            let latency = info
+                .latency()
+                .recent()
+                .get(0)
+                .map_or(f64::NAN, Duration::as_secs_f64);
+
+            metrics::histogram!("gateway_shard_latency", latency, "shard" => info.id().to_string());
+            metrics::histogram!("gateway_shard_status", connection_status, "shard" => info.id().to_string());
         }
     }
 }
