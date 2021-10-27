@@ -19,10 +19,19 @@ use std::{ops::Range, str::FromStr};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GatewayEventDeserializer<'a> {
-    event_type: Option<(&'a str, Range<usize>)>,
-    op: (u8, Range<usize>),
-    sequence: Option<(u64, Range<usize>)>,
+    event_type: Option<EventTypeInfo<'a>>,
+    op: OpInfo,
+    sequence: Option<SequenceInfo>,
 }
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OpInfo(pub u8, pub Range<usize>);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EventTypeInfo<'a>(pub &'a str, pub Range<usize>);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SequenceInfo(pub u64, pub Range<usize>);
 
 impl<'a> GatewayEventDeserializer<'a> {
     /// Create a gateway event deserializer with some information found by
@@ -43,34 +52,18 @@ impl<'a> GatewayEventDeserializer<'a> {
         })
     }
 
-    /// Return an immutable reference to the event type of the payload.
-    pub fn event_type_ref(&self) -> Option<&str> {
-        self.event_type.as_ref().map(|v| v.0)
-    }
-
     /// Return the opcode of the payload.
     pub const fn op(&self) -> u8 {
         self.op.0
     }
 
-    /// Return the sequence of the payload.
-    pub fn sequence(&self) -> Option<u64> {
-        self.sequence.as_ref().map(|v| v.0)
-    }
-
     /// Consume the deserializer, returning its opcode and event type
     /// components.
-    pub const fn into_parts(
-        self,
-    ) -> (
-        (u8, Range<usize>),
-        Option<(u64, Range<usize>)>,
-        Option<(&'a str, Range<usize>)>,
-    ) {
+    pub const fn into_parts(self) -> (OpInfo, Option<SequenceInfo>, Option<EventTypeInfo<'a>>) {
         (self.op, self.sequence, self.event_type)
     }
 
-    fn find_event_type(input: &'a str) -> Option<(&'a str, Range<usize>)> {
+    fn find_event_type(input: &'a str) -> Option<EventTypeInfo> {
         // We're going to search for the event type key from the start. Discord
         // always puts it at the front before the D key from some testing of
         // several hundred payloads.
@@ -94,15 +87,15 @@ impl<'a> GatewayEventDeserializer<'a> {
 
         input
             .get(range.clone())
-            .map(|event_type| (event_type, range))
+            .map(|event_type| EventTypeInfo(event_type, range))
     }
 
-    fn find_opcode(input: &'a str) -> Option<(u8, Range<usize>)> {
-        Self::find_integer(input, r#""op":"#)
+    fn find_opcode(input: &'a str) -> Option<OpInfo> {
+        Self::find_integer(input, r#""op":"#).map(|(op, pos)| OpInfo(op, pos))
     }
 
-    fn find_sequence(input: &'a str) -> Option<(u64, Range<usize>)> {
-        Self::find_integer(input, r#""s":"#)
+    fn find_sequence(input: &'a str) -> Option<SequenceInfo> {
+        Self::find_integer(input, r#""s":"#).map(|(seq, pos)| SequenceInfo(seq, pos))
     }
 
     fn find_integer<T: FromStr>(input: &'a str, key: &str) -> Option<(T, Range<usize>)> {

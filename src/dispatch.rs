@@ -7,12 +7,15 @@ use twilight_gateway::{
     Event,
 };
 
-use std::{ops::Range, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use crate::{deserializer::GatewayEventDeserializer, model::Ready, state::ShardStatus};
+use crate::{
+    deserializer::{EventTypeInfo, GatewayEventDeserializer, SequenceInfo},
+    model::Ready,
+    state::ShardStatus,
+};
 
-/// Payload string and index of the sequence number
-pub type BroadcastMessage = (String, Option<(u64, Range<usize>)>);
+pub type BroadcastMessage = (String, Option<SequenceInfo>);
 
 pub async fn dispatch_events(
     mut events: Events,
@@ -21,55 +24,45 @@ pub async fn dispatch_events(
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
 ) {
     while let Some(event) = events.next().await {
-        match event {
-            Event::ShardPayload(body) => {
-                let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
-                // The event is always valid
-                let deserializer = GatewayEventDeserializer::from_json(&payload).unwrap();
-                let (op, sequence, event_type) = deserializer.into_parts();
+        shard_status.guilds.update(&event);
 
-                if let Some((event_name, _)) = event_type {
-                    metrics::increment_counter!("gateway_shard_events", "shard" => shard_id.to_string(), "event_type" => event_name.to_string());
+        if let Event::ShardPayload(body) = event {
+            let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
+            // The event is always valid
+            let deserializer = GatewayEventDeserializer::from_json(&payload).unwrap();
+            let (op, sequence, event_type) = deserializer.into_parts();
 
-                    if event_name == "READY" {
-                        // Use the raw JSON from READY to create a new blank READY
-                        let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
+            if let Some(EventTypeInfo(event_name, _)) = event_type {
+                metrics::increment_counter!("gateway_shard_events", "shard" => shard_id.to_string(), "event_type" => event_name.to_string());
 
-                        // Clear the guilds
-                        if let Some(guilds) = ready.d.get_mut("guilds") {
-                            if let Some(arr) = guilds.as_array_mut() {
-                                arr.clear();
-                            }
+                if event_name == "READY" {
+                    // Use the raw JSON from READY to create a new blank READY
+                    let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
+
+                    // Clear the guilds
+                    if let Some(guilds) = ready.d.get_mut("guilds") {
+                        if let Some(arr) = guilds.as_array_mut() {
+                            arr.clear();
                         }
-
-                        // We don't care if it was already set
-                        // since this data is timeless
-                        let _res = shard_status.ready.set(ready.d);
-                        shard_status.ready_set.notify_waiters();
-
-                        continue;
-                    } else if event_name == "RESUMED" {
-                        continue;
                     }
-                }
 
-                // We only want to relay dispatchable events, not RESUMEs and not READY
-                // because we fake a READY event
-                if op.0 == 0 {
-                    trace!("Sending payload to clients: {:?}", payload);
-                    let _res = broadcast_tx.send((payload, sequence));
+                    // We don't care if it was already set
+                    // since this data is timeless
+                    let _res = shard_status.ready.set(ready.d);
+                    shard_status.ready_set.notify_waiters();
+
+                    continue;
+                } else if event_name == "RESUMED" {
+                    continue;
                 }
             }
-            Event::GuildCreate(guild_create) => {
-                shard_status.guilds.insert(guild_create.0);
+
+            // We only want to relay dispatchable events, not RESUMEs and not READY
+            // because we fake a READY event
+            if op.0 == 0 {
+                trace!("Sending payload to clients: {:?}", payload);
+                let _res = broadcast_tx.send((payload, sequence));
             }
-            Event::GuildDelete(guild_delete) => {
-                shard_status.guilds.remove(guild_delete.id);
-            }
-            Event::GuildUpdate(guild_update) => {
-                shard_status.guilds.update(guild_update.0);
-            }
-            _ => {}
         }
     }
 }

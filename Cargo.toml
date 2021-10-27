@@ -31,6 +31,7 @@ tokio = { version = "1", default-features = false, features = [
     "macros",
     "rt-multi-thread"
 ] }
+twilight-cache-inmemory = { git = "https://github.com/twilight-rs/twilight.git", branch = "next" }
 twilight-gateway = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = [
     "zlib-simd",
     "rustls-webpki-roots",

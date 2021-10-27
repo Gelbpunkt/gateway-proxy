@@ -20,7 +20,7 @@ It uses a minimal algorithm to replace the sequence numbers in incoming payloads
 
 ## Configuration
 
-Create a file `config.json` and fill in these fields:
+Create a file `config.json` and fill in these fields as you wish:
 
 ```json
 {
@@ -28,15 +28,29 @@ Create a file `config.json` and fill in these fields:
   "token": "",
   "intents": 32511,
   "port": 7878,
-  "shards": null,
   "activity": {
     "type": 0,
     "name": "with kubernetes"
   },
   "status": "idle",
-  "backpressure": 100
+  "backpressure": 100,
+  "cache": {
+    "channels": false,
+    "presences": false,
+    "emojis": false,
+    "members": false,
+    "roles": false,
+    "stage_instances": false,
+    "stickers": false,
+    "users": false,
+    "voice_states": false
+  }
 }
 ```
+
+If you have a fixed shard count, set `shards` to the amount of shards. If you're using twilight's HTTP-proxy, set `twilight_http_proxy` to the `ip:port` of the HTTP proxy.
+
+Take special care when setting cache flags, only enable what you actually need. The proxy will tend to send more than Discord would, so double check what your bot depends on.
 
 ## Running
 
@@ -68,4 +82,4 @@ The proxy exposes Prometheus metrics at the `/metrics` endpoint. They contain ev
 
 ## Known Issues / TODOs
 
-- `GUILD_CREATE` has more state that needs to be tracked. Probably voice states, threads, stickers, roles, members, emojis and channels (https://gist.github.com/Gelbpunkt/751189ef40e8fdbe4edd0ad671bb3f19)
+- Maybe adhere to this: `When initially connecting, if you don't have the GUILD_PRESENCES Gateway Intent, or if the guild is over 75k members, it will only send members who are in voice, plus the member for you (the connecting user). Otherwise, if a guild has over large_threshold members (value in the Gateway Identify), it will only send members who are online, have a role, have a nickname, or are in a voice channel, and if it has under large_threshold members, it will send all members.` (though I think this is already wrong documentation from Discord, a 30k member guild above threshold already only sends the bot member)

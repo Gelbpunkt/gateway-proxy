@@ -5,19 +5,23 @@
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::large_enum_variant,
-    clippy::cast_ptr_alignment
+    clippy::cast_ptr_alignment,
+    clippy::struct_excessive_bools,
+    clippy::from_over_into
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
 use tokio::sync::{broadcast, Notify};
-use twilight_gateway::{EventTypeFlags, Shard};
+use twilight_gateway::Shard;
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
-use std::{env::set_var, error::Error, lazy::SyncOnceCell, process::exit, sync::Arc};
+use std::{env::set_var, error::Error, lazy::SyncOnceCell, sync::Arc};
+
+use crate::config::CONFIG;
 
 mod cache;
 mod config;
@@ -46,16 +50,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     // Exit on SIGINT/SIGTERM, used in Docker
     unsafe { set_os_handlers() };
 
-    let config = match config::load("config.json") {
-        Ok(config) => config,
-        Err(err) => {
-            // Avoid panicking
-            eprintln!("Config Error: {}", err);
-            exit(1);
-        }
-    };
-
-    set_var("RUST_LOG", config.log_level);
+    set_var("RUST_LOG", CONFIG.log_level.clone());
     env_logger::builder().format_timestamp_millis().init();
 
     // Set up metrics collection
@@ -64,9 +59,9 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
 
     // Set up a HTTPClient
-    let mut client_builder = Client::builder().token(config.token.clone());
+    let mut client_builder = Client::builder().token(CONFIG.token.clone());
 
-    if let Some(http_proxy) = config.twilight_http_proxy {
+    if let Some(http_proxy) = CONFIG.twilight_http_proxy.clone() {
         client_builder = client_builder.proxy(http_proxy, true);
     }
 
@@ -75,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     // Check total shards required
     let gateway = client.gateway().authed().exec().await?.model().await?;
 
-    let shard_count = config.shards.unwrap_or(gateway.shards);
+    let shard_count = CONFIG.shards.unwrap_or(gateway.shards);
 
     // Set up a queue for the shards
     let queue: Arc<dyn Queue> = Arc::new(
@@ -86,27 +81,22 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut shards: state::Shards = Vec::with_capacity(shard_count as usize);
 
     for shard_id in 0..shard_count {
-        let mut builder = Shard::builder(config.token.clone(), config.intents)
+        let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)
             .queue(queue.clone())
             .shard(shard_id, shard_count)?
             .gateway_url(Some(gateway.url.clone()))
-            .event_types(
-                EventTypeFlags::SHARD_PAYLOAD
-                    | EventTypeFlags::GUILD_CREATE
-                    | EventTypeFlags::GUILD_DELETE
-                    | EventTypeFlags::GUILD_UPDATE,
-            );
+            .event_types(CONFIG.cache.clone().into());
 
-        if let Some(activity) = config.activity.clone() {
+        if let Some(activity) = CONFIG.activity.clone() {
             // Will only error if activity are empty, so we can unwrap
             builder = builder.presence(
-                UpdatePresencePayload::new(vec![activity], false, None, config.status).unwrap(),
+                UpdatePresencePayload::new(vec![activity], false, None, CONFIG.status).unwrap(),
             );
         }
 
         // To support multiple listeners on the same shard
         // we need to make a broadcast channel with the events
-        let (broadcast_tx, _) = broadcast::channel(config.backpressure);
+        let (broadcast_tx, _) = broadcast::channel(CONFIG.backpressure);
 
         let (shard, events) = builder.build();
 
@@ -143,7 +133,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         shard_count,
     });
 
-    if let Err(e) = server::run_server(config.port, state, metrics_handle).await {
+    if let Err(e) = server::run_server(CONFIG.port, state, metrics_handle).await {
         error!("{}", e);
     };
 

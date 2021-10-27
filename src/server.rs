@@ -27,7 +27,10 @@ use std::{
 };
 
 use crate::{
-    deserializer::GatewayEventDeserializer, model::Identify, state::State, upgrade::server_upgrade,
+    deserializer::{GatewayEventDeserializer, SequenceInfo},
+    model::Identify,
+    state::State,
+    upgrade::server_upgrade,
     zlib_sys::Compressor,
 };
 
@@ -84,7 +87,7 @@ async fn forward_shard(
                 let (mut payload, sequence) = event;
 
                 // Overwrite the sequence number
-                if let Some((_, sequence_range)) = sequence {
+                if let Some(SequenceInfo(_, sequence_range)) = sequence {
                     seq += 1;
                     payload.replace_range(sequence_range, &seq.to_string());
                 }
