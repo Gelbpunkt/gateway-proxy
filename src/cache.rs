@@ -29,18 +29,22 @@ pub enum Event {
     GuildDelete(GuildDelete),
 }
 
-pub struct GuildCache(DashMap<GuildId, Guild>);
+pub struct GuildCache(DashMap<GuildId, Guild>, u64);
 
 impl GuildCache {
-    pub fn new() -> Self {
-        Self(DashMap::new())
+    pub fn new(shard_id: u64) -> Self {
+        Self(DashMap::new(), shard_id)
     }
 
     pub fn insert(&self, guild_create: Guild) {
+        metrics::increment_gauge!("guild_cache_size", 1.0, "shard" => self.1.to_string());
+
         self.0.insert(guild_create.id, guild_create);
     }
 
     pub fn remove(&self, guild_id: GuildId) {
+        metrics::decrement_gauge!("guild_cache_size", 1.0, "shard" => self.1.to_string());
+
         self.0.remove(&guild_id);
     }
 

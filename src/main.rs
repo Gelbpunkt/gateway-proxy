@@ -9,6 +9,7 @@
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
+use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
 use tokio::sync::{broadcast, Notify};
 use twilight_gateway::{EventTypeFlags, Shard};
@@ -25,6 +26,7 @@ mod dispatch;
 mod model;
 mod server;
 mod state;
+mod upgrade;
 mod zlib_sys;
 
 #[global_allocator]
@@ -55,6 +57,11 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     set_var("RUST_LOG", config.log_level);
     env_logger::builder().format_timestamp_millis().init();
+
+    // Set up metrics collection
+    let recorder = PrometheusBuilder::new().build();
+    let metrics_handle = Arc::new(recorder.handle());
+    metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
 
     // Set up a HTTPClient
     let client = Arc::new(Client::new(config.token.clone()));
@@ -104,7 +111,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             events: broadcast_tx.clone(),
             ready: SyncOnceCell::new(),
             ready_set: Notify::new(),
-            guilds: cache::GuildCache::new(),
+            guilds: cache::GuildCache::new(shard_id),
         });
 
         // Now pipe the events into the broadcast
@@ -113,8 +120,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         tokio::spawn(dispatch::dispatch_events(
             events,
             shard_status.clone(),
+            shard_id,
             broadcast_tx,
         ));
+
+        // Track the shard latency in metrics
+        tokio::spawn(dispatch::shard_latency(shard_status.clone()));
 
         shards.push(shard_status);
 
@@ -126,7 +137,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         shard_count,
     });
 
-    if let Err(e) = server::run_server(config.port, state).await {
+    if let Err(e) = server::run_server(config.port, state, metrics_handle).await {
         error!("{}", e);
     };
 

@@ -58,6 +58,10 @@ Connecting is fairly simple, just hardcode the gateway URL in your client to `ws
 
 **Important:** The proxy detects `zlib-stream` query parameters and `compress` fields in your `IDENTIFY` payloads and will encode packets if they are enabled, just like Discord. This comes with CPU overhead and is likely not desired in localhost networking. Make sure to disable this if so.
 
+## Metrics
+
+The proxy exposes Prometheus metrics at the `/metrics` endpoint. They contain event counters, cache size and shard latency histograms specific to each shard.
+
 ## Caveats
 
 `RESUME`s will always result in a session invalidation because the proxy doesn't really track session IDs. Just reidentify, it's free.

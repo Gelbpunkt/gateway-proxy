@@ -1,10 +1,10 @@
 use futures_util::StreamExt;
 use log::trace;
 use simd_json::Mutable;
-use tokio::sync::broadcast;
+use tokio::{sync::broadcast, time::interval};
 use twilight_gateway::{shard::Events, Event};
 
-use std::{ops::Range, sync::Arc};
+use std::{ops::Range, sync::Arc, time::Duration};
 
 use crate::{deserializer::GatewayEventDeserializer, model::Ready, state::ShardStatus};
 
@@ -14,6 +14,7 @@ pub type BroadcastMessage = (String, Option<(u64, Range<usize>)>);
 pub async fn dispatch_events(
     mut events: Events,
     shard_status: Arc<ShardStatus>,
+    shard_id: u64,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
 ) {
     while let Some(event) = events.next().await {
@@ -24,28 +25,29 @@ pub async fn dispatch_events(
                 let deserializer = GatewayEventDeserializer::from_json(&payload).unwrap();
                 let (op, sequence, event_type) = deserializer.into_parts();
 
-                // Use the raw JSON from READY to create a blank READY
-                if let Some(("READY", _)) = event_type {
-                    let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
+                if let Some((event_name, _)) = event_type {
+                    metrics::increment_counter!("shard_events", "shard" => shard_id.to_string(), "event_type" => event_name.to_string());
 
-                    // Clear the guilds
-                    if let Some(guilds) = ready.d.get_mut("guilds") {
-                        if let Some(arr) = guilds.as_array_mut() {
-                            arr.clear();
+                    if event_name == "READY" {
+                        // Use the raw JSON from READY to create a new blank READY
+                        let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
+
+                        // Clear the guilds
+                        if let Some(guilds) = ready.d.get_mut("guilds") {
+                            if let Some(arr) = guilds.as_array_mut() {
+                                arr.clear();
+                            }
                         }
+
+                        // We don't care if it was already set
+                        // since this data is timeless
+                        let _res = shard_status.ready.set(ready.d);
+                        shard_status.ready_set.notify_waiters();
+
+                        continue;
+                    } else if event_name == "RESUMED" {
+                        continue;
                     }
-
-                    // We don't care if it was already set
-                    // since this data is timeless
-                    let _res = shard_status.ready.set(ready.d);
-                    shard_status.ready_set.notify_waiters();
-
-                    continue;
-                }
-
-                // Do not relay resumes
-                if let Some(("RESUMED", _)) = event_type {
-                    continue;
                 }
 
                 // We only want to relay dispatchable events, not RESUMEs and not READY
@@ -65,6 +67,21 @@ pub async fn dispatch_events(
                 shard_status.guilds.update(guild_update.0);
             }
             _ => {}
+        }
+    }
+}
+
+pub async fn shard_latency(shard_status: Arc<ShardStatus>) {
+    let mut interval = interval(Duration::from_secs(60));
+
+    loop {
+        interval.tick().await;
+
+        if let Ok(info) = shard_status.shard.info() {
+            let latency = info.latency().recent().get(0);
+            if let Some(latency) = latency {
+                metrics::histogram!("shard_latency", latency.as_secs_f64(), "shard" => info.id().to_string());
+            }
         }
     }
 }

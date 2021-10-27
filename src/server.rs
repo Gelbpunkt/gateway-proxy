@@ -1,20 +1,25 @@
-use futures_util::{SinkExt, StreamExt};
-use log::{debug, info, trace, warn};
+use futures_util::{Future, SinkExt, StreamExt};
+use hyper::{
+    server::conn::AddrStream,
+    service::{make_service_fn, service_fn},
+    Body, Request, Response, Server,
+};
+use log::{debug, error, info, trace, warn};
+use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{
-    net::{TcpListener, TcpStream},
+    io::{AsyncRead, AsyncWrite},
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
 };
 use tokio_tungstenite::{
-    accept_hdr_async,
-    tungstenite::{
-        handshake::server::{Request, Response},
-        Error, Message,
-    },
+    tungstenite::{protocol::Role, Error, Message},
+    WebSocketStream,
 };
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 
 use std::{
+    convert::Infallible,
     net::SocketAddr,
+    pin::Pin,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -22,7 +27,8 @@ use std::{
 };
 
 use crate::{
-    deserializer::GatewayEventDeserializer, model::Identify, state::State, zlib_sys::Compressor,
+    deserializer::GatewayEventDeserializer, model::Identify, state::State, upgrade::server_upgrade,
+    zlib_sys::Compressor,
 };
 
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
@@ -93,22 +99,14 @@ async fn forward_shard(
     }
 }
 
-async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
-    let use_zlib = Arc::new(AtomicBool::new(false));
-
+pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
+    stream: S,
+    state: State,
+    use_zlib: Arc<AtomicBool>,
+) -> Result<(), Error> {
     let mut compress = Compressor::new(15);
 
-    let stream = accept_hdr_async(stream, |req: &Request, res: Response| {
-        // Check if the request URI asks for zlib compression
-        if let Some(query) = req.uri().query() {
-            if query.contains("compress=zlib-stream") {
-                use_zlib.store(true, Ordering::Relaxed);
-            }
-        }
-
-        Ok(res)
-    })
-    .await?;
+    let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
     let (mut sink, mut stream) = stream.split();
 
@@ -213,16 +211,48 @@ async fn handle_client(stream: TcpStream, state: State) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn run_server(port: u16, state: State) -> Result<(), Error> {
+fn handle_metrics(
+    handle: Arc<PrometheusHandle>,
+) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Infallible>> + Send>> {
+    Box::pin(async move {
+        Ok(Response::builder()
+            .body(Body::from(handle.render()))
+            .unwrap())
+    })
+}
+
+pub async fn run_server(
+    port: u16,
+    state: State,
+    metrics_handle: Arc<PrometheusHandle>,
+) -> Result<(), Error> {
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
-    let listener = TcpListener::bind(addr).await?;
+
+    let service = make_service_fn(move |addr: &AddrStream| {
+        trace!("Connection from: {:?}", addr);
+
+        let state = state.clone();
+        let metrics_handle = metrics_handle.clone();
+
+        async move {
+            Ok::<_, Infallible>(service_fn(move |incoming: Request<Body>| {
+                if incoming.uri().path() == "/metrics" {
+                    // Reply with metrics on /metrics
+                    handle_metrics(metrics_handle.clone())
+                } else {
+                    // On anything else just provide the websocket server
+                    Box::pin(server_upgrade(incoming, state.clone()))
+                }
+            }))
+        }
+    });
+
+    let server = Server::bind(&addr).serve(service);
 
     info!("Listening on {}", addr);
 
-    while let Ok((stream, remote_addr)) = listener.accept().await {
-        info!("New connection from {}", remote_addr);
-
-        tokio::spawn(handle_client(stream, state.clone()));
+    if let Err(why) = server.await {
+        error!("Fatal server error: {}", why);
     }
 
     Ok(())
