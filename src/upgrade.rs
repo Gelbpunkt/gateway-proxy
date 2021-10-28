@@ -12,6 +12,7 @@ use sha1::{Digest, Sha1};
 
 use std::{
     convert::Infallible,
+    net::SocketAddr,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -23,6 +24,7 @@ use crate::{server::handle_client, state::State};
 const GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 pub async fn server_upgrade(
+    addr: SocketAddr,
     mut request: Request<Body>,
     state: State,
 ) -> Result<Response<Body>, Infallible> {
@@ -62,9 +64,9 @@ pub async fn server_upgrade(
     tokio::spawn(async move {
         match upgrade::on(&mut request).await {
             Ok(upgraded) => {
-                let _res = handle_client(upgraded, state, use_zlib).await;
+                let _res = handle_client(addr, upgraded, state, use_zlib).await;
             }
-            Err(e) => error!("Websocket upgrade error: {}", e),
+            Err(e) => error!("[{}] Websocket upgrade error: {}", addr, e),
         }
     });
 

@@ -60,7 +60,11 @@ pub async fn dispatch_events(
             // We only want to relay dispatchable events, not RESUMEs and not READY
             // because we fake a READY event
             if op.0 == 0 {
-                trace!("Sending payload to clients: {:?}", payload);
+                trace!(
+                    "[Shard {}] Sending payload to clients: {:?}",
+                    shard_id,
+                    payload
+                );
                 let _res = broadcast_tx.send((payload, sequence));
             }
         }

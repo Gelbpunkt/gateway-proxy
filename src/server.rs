@@ -55,7 +55,7 @@ async fn forward_shard(
     // Subscribe to events for this shard
     let mut event_receiver = shard_status.events.subscribe();
 
-    debug!("Starting to send events to client");
+    debug!("[Shard {}] Starting to send events to client", shard_id);
 
     // If there is no READY received for the shard yet, wait for it
     if shard_status.ready.get().is_none() {
@@ -68,14 +68,17 @@ async fn forward_shard(
         .get_ready_payload(shard_status.ready.get().unwrap().clone(), &mut seq);
 
     if let Ok(serialized) = simd_json::to_string(&ready_payload) {
-        debug!("Sending newly created READY");
+        debug!("[Shard {}] Sending newly created READY", shard_id);
         let _res = stream_writer.send(Message::Text(serialized));
     };
 
     // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
     for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
         if let Ok(serialized) = simd_json::to_string(&payload) {
-            trace!("Sending newly created GUILD_CREATE/GUILD_DELETE payload");
+            trace!(
+                "[Shard {}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
+                shard_id
+            );
             let _res = stream_writer.send(Message::Text(serialized));
         };
     }
@@ -103,6 +106,7 @@ async fn forward_shard(
 }
 
 pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
+    addr: SocketAddr,
     stream: S,
     state: State,
     use_zlib: Arc<AtomicBool>,
@@ -119,7 +123,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     let use_zlib_clone = use_zlib.clone();
     let sink_task = tokio::spawn(async move {
         while let Some(msg) = stream_receiver.recv().await {
-            trace!("Sending {:?}", msg);
+            trace!("[{}] Sending {:?}", addr, msg);
 
             if use_zlib_clone.load(Ordering::Relaxed) {
                 let mut compressed = Vec::with_capacity(msg.len());
@@ -160,16 +164,16 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
         match deserializer.op() {
             1 => {
-                trace!("Sending heartbeat ACK");
+                trace!("[{}] Sending heartbeat ACK", addr);
                 let _res = stream_writer.send(Message::Text(HEARTBEAT_ACK.to_string()));
             }
             2 => {
-                debug!("Client is identifying");
+                debug!("[{}] Client is identifying", addr);
 
                 let identify: Identify = match simd_json::from_str(&mut payload) {
                     Ok(identify) => identify,
                     Err(e) => {
-                        warn!("Invalid identify payload: {:?}", e);
+                        warn!("[{}] Invalid identify payload: {:?}", addr, e);
                         continue;
                     }
                 };
@@ -177,16 +181,22 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 let (shard_id, shard_count) = (identify.d.shard[0], identify.d.shard[1]);
 
                 if shard_count != state.shard_count {
-                    warn!("Shard count from client identify mismatched, disconnecting");
+                    warn!(
+                        "[{}] Shard count from client identify mismatched, disconnecting",
+                        addr
+                    );
                     break;
                 }
 
                 if shard_id >= shard_count {
-                    warn!("Shard ID from client is out of range, disconnecting");
+                    warn!(
+                        "[{}] Shard ID from client is out of range, disconnecting",
+                        addr
+                    );
                     break;
                 }
 
-                trace!("Shard ID is {:?}", shard_id);
+                trace!("[{}] Shard ID is {:?}", addr, shard_id);
 
                 if let Some(compress) = identify.d.compress {
                     use_zlib.store(compress, Ordering::Relaxed);
@@ -195,18 +205,20 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 let _res = shard_id_tx.send(shard_id);
             }
             6 => {
-                debug!("Client is resuming: {:?}", payload);
+                debug!("[{}] Client is resuming", addr);
                 // TODO: Keep track of session IDs and choose one that we have active
                 // This would be unnecessary if people forked their clients though
                 // For now, send an invalid session so they use identify instead
                 let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
             }
             _ => {
-                trace!("Sending {:?} to Discord directly", payload);
+                trace!("[{}] Sending {:?} to Discord directly", addr, payload);
                 let _res = shard_send_tx.send(TwilightMessage::Text(payload));
             }
         }
     }
+
+    debug!("[{}] Client disconnected", addr);
 
     sink_task.abort();
     shard_forward_task.abort();
@@ -232,10 +244,11 @@ pub async fn run_server(
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
 
     let service = make_service_fn(move |addr: &AddrStream| {
-        trace!("Connection from: {:?}", addr);
-
         let state = state.clone();
         let metrics_handle = metrics_handle.clone();
+        let addr = addr.remote_addr();
+
+        trace!("[{:?}] New connection", addr);
 
         async move {
             Ok::<_, Infallible>(service_fn(move |incoming: Request<Body>| {
@@ -244,7 +257,7 @@ pub async fn run_server(
                     handle_metrics(metrics_handle.clone())
                 } else {
                     // On anything else just provide the websocket server
-                    Box::pin(server_upgrade(incoming, state.clone()))
+                    Box::pin(server_upgrade(addr, incoming, state.clone()))
                 }
             }))
         }
