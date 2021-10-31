@@ -294,9 +294,9 @@ dependencies = [
 
 [[package]]
 name = "float-cmp"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
+checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 dependencies = [
  "num-traits",
 ]
@@ -623,9 +623,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.105"
+version = "0.2.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "869d572136620d55835903746bcb5cdc54cb2851fd0aeec53220b4bb65ef3013"
+checksum = "a60553f9a9e039a333b4e9b20573b9e9b9c0bb3a11e201ccc48ef4283456d673"
 
 [[package]]
 name = "libmimalloc-sys"
@@ -1303,9 +1303,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2c2416fdedca8443ae44b4527de1ea633af61d8f7169ffa6e72c5b53d24efcc"
+checksum = "588b2d10a336da58d877567cd8fb8a14b463e2104910f8132cd054b4b96e29ee"
 dependencies = [
  "autocfg",
  "bytes",
@@ -1320,9 +1320,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2dd85aeaba7b68df939bd357c6afb36c87951be9e80bf9c859f2fc3e9fca0fd"
+checksum = "114383b041aa6212c579467afa0075fbbdd0718de036100bc0ba7961d8cb9095"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1359,9 +1359,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.6.8"
+version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d3725d3efa29485e87311c5b699de63cde14b00ed4d256b8318aa30ca452cd"
+checksum = "9e99e1983e5d376cd8eb4b66604d2e99e79f5bd988c3055891dcd8c9e2604cc0"
 dependencies = [
  "bytes",
  "futures-core",
@@ -1440,8 +1440,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-cache-inmemory"
-version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b42688bef41312d6ad192c9b9f5843b04147c7cc"
+version = "0.7.1"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1451,8 +1451,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-gateway"
-version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b42688bef41312d6ad192c9b9f5843b04147c7cc"
+version = "0.7.1"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1472,7 +1472,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b42688bef41312d6ad192c9b9f5843b04147c7cc"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
 dependencies = [
  "tokio",
  "tracing",
@@ -1481,8 +1481,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-http"
-version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b42688bef41312d6ad192c9b9f5843b04147c7cc"
+version = "0.7.1"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1498,7 +1498,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.8.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b42688bef41312d6ad192c9b9f5843b04147c7cc"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
 dependencies = [
  "futures-util",
  "http",
@@ -1507,8 +1507,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-model"
-version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b42688bef41312d6ad192c9b9f5843b04147c7cc"
+version = "0.7.1"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
 dependencies = [
  "bitflags",
  "serde",
@@ -1570,9 +1570,9 @@ checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
 name = "value-trait"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b637f98040dfa411b01a85b238a8cadbd797b303c23007157dee4bbbd3a72af"
+checksum = "0393efdd7d82f856a927b0fcafa80bca45911f5c89ef6b9d80197bebc284f72e"
 dependencies = [
  "float-cmp",
  "halfbrown",

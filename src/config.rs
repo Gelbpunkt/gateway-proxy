@@ -67,7 +67,8 @@ impl Into<EventTypeFlags> for CacheConfig {
         let mut flags = EventTypeFlags::SHARD_PAYLOAD
             | EventTypeFlags::GUILD_CREATE
             | EventTypeFlags::GUILD_DELETE
-            | EventTypeFlags::GUILD_UPDATE;
+            | EventTypeFlags::GUILD_UPDATE
+            | EventTypeFlags::READY;
 
         if self.members {
             flags |= EventTypeFlags::MEMBER_ADD
@@ -102,7 +103,7 @@ impl Into<EventTypeFlags> for CacheConfig {
         }
 
         if self.voice_states {
-            flags |= EventTypeFlags::VOICE_STATE_UPDATE;
+            flags |= EventTypeFlags::VOICE_STATE_UPDATE | EventTypeFlags::VOICE_SERVER_UPDATE;
         }
 
         if self.users {
@@ -117,39 +118,39 @@ impl Into<ResourceType> for CacheConfig {
     fn into(self) -> ResourceType {
         let mut resource_types = ResourceType::GUILD | ResourceType::USER_CURRENT;
 
-        if CONFIG.cache.channels {
+        if self.channels {
             resource_types |= ResourceType::CHANNEL;
         }
 
-        if CONFIG.cache.emojis {
+        if self.emojis {
             resource_types |= ResourceType::EMOJI;
         }
 
-        if CONFIG.cache.members {
+        if self.members {
             resource_types |= ResourceType::MEMBER;
         }
 
-        if CONFIG.cache.presences {
+        if self.presences {
             resource_types |= ResourceType::PRESENCE;
         }
 
-        if CONFIG.cache.roles {
+        if self.roles {
             resource_types |= ResourceType::ROLE;
         }
 
-        if CONFIG.cache.stage_instances {
+        if self.stage_instances {
             resource_types |= ResourceType::STAGE_INSTANCE;
         }
 
-        if CONFIG.cache.stickers {
+        if self.stickers {
             resource_types |= ResourceType::STICKER;
         }
 
-        if CONFIG.cache.users {
+        if self.users {
             resource_types |= ResourceType::USER;
         }
 
-        if CONFIG.cache.voice_states {
+        if self.voice_states {
             resource_types |= ResourceType::VOICE_STATE;
         }
 

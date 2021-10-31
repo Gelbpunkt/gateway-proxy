@@ -25,6 +25,7 @@ pub async fn dispatch_events(
 ) {
     while let Some(event) = events.next().await {
         shard_status.guilds.update(&event);
+        shard_status.voice.update(&event);
 
         if let Event::ShardPayload(body) = event {
             let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };

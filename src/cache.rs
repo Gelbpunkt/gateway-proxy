@@ -1,17 +1,20 @@
+use std::sync::Arc;
+
+use dashmap::DashMap;
 use halfbrown::hashmap;
 use serde::Serialize;
 use simd_json::OwnedValue;
 use twilight_cache_inmemory::{InMemoryCache, UpdateCache};
-use twilight_gateway::Intents;
+use twilight_gateway::{Event as GatewayEvent, Intents};
 use twilight_model::{
     channel::{message::Sticker, GuildChannel, StageInstance},
     gateway::{
-        payload::incoming::{GuildCreate, GuildDelete},
+        payload::incoming::{GuildCreate, GuildDelete, VoiceServerUpdate},
         presence::{Presence, UserOrId},
         OpCode,
     },
     guild::{Emoji, Guild, Member, Role},
-    id::GuildId,
+    id::{ChannelId, GuildId},
     voice::VoiceState,
 };
 
@@ -25,26 +28,97 @@ pub struct Payload {
     s: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(untagged)]
 pub enum Event {
     Ready(JsonObject),
     GuildCreate(GuildCreate),
     GuildDelete(GuildDelete),
+    VoiceServerUpdate(VoiceServerUpdate),
+    VoiceStateUpdate(VoiceState),
 }
 
-pub struct GuildCache(InMemoryCache, u64);
+pub struct VoiceCache(DashMap<GuildId, Vec<Event>>, Arc<InMemoryCache>, u64);
+
+impl VoiceCache {
+    pub fn new(cache: Arc<InMemoryCache>, shard_id: u64) -> Self {
+        Self(DashMap::new(), cache, shard_id)
+    }
+
+    pub fn is_in_channel(&self, guild_id: GuildId, channel_id: ChannelId) -> bool {
+        if let Some(payloads) = self.0.get(&guild_id) {
+            for payload in payloads.iter() {
+                if let Event::VoiceStateUpdate(state) = payload {
+                    return state.channel_id.contains(&channel_id);
+                }
+            }
+        }
+
+        false
+    }
+
+    pub fn get_payloads(&self, guild_id: GuildId, sequence: &mut usize) -> Vec<Payload> {
+        if let Some(events) = self.0.get(&guild_id) {
+            events
+                .iter()
+                .map(|event| {
+                    *sequence += 1;
+
+                    Payload {
+                        d: event.clone(),
+                        op: OpCode::Event,
+                        t: if let Event::VoiceServerUpdate(_) = event {
+                            String::from("VOICE_SERVER_UPDATE")
+                        } else {
+                            String::from("VOICE_STATE_UPDATE")
+                        },
+                        s: *sequence,
+                    }
+                })
+                .collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    pub fn update(&self, value: &GatewayEvent) {
+        match value {
+            GatewayEvent::VoiceServerUpdate(voice_server_update) => {
+                if let Some(guild_id) = voice_server_update.guild_id {
+                    // This is always the second event
+                    if let Some(mut payloads) = self.0.get_mut(&guild_id) {
+                        payloads.push(Event::VoiceServerUpdate(voice_server_update.clone()));
+                    }
+                }
+            }
+            GatewayEvent::VoiceStateUpdate(voice_state_update) => {
+                if let Some(me) = self.1.current_user() {
+                    if me.id == voice_state_update.0.user_id {
+                        if let Some(guild_id) = voice_state_update.0.guild_id {
+                            // This is always the first event
+                            if voice_state_update.0.channel_id.is_some() {
+                                self.0.insert(
+                                    guild_id,
+                                    vec![Event::VoiceStateUpdate(voice_state_update.0.clone())],
+                                );
+                            } else {
+                                // Client disconnected
+                                self.0.remove(&guild_id);
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+pub struct GuildCache(Arc<InMemoryCache>, u64);
 
 impl GuildCache {
-    pub fn new(shard_id: u64) -> Self {
-        let resource_types = CONFIG.cache.clone().into();
-
-        Self(
-            InMemoryCache::builder()
-                .resource_types(resource_types)
-                .build(),
-            shard_id,
-        )
+    pub fn new(cache: Arc<InMemoryCache>, shard_id: u64) -> Self {
+        Self(cache, shard_id)
     }
 
     pub fn update(&self, value: &impl UpdateCache) {
@@ -155,7 +229,6 @@ impl GuildCache {
                     Some(Member {
                         deaf: member.deaf().unwrap_or_default(),
                         guild_id: member.guild_id(),
-                        hoisted_role: None, // TODO
                         joined_at: member.joined_at(),
                         mute: member.mute().unwrap_or_default(),
                         nick: member.nick().map(ToString::to_string),

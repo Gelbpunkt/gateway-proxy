@@ -14,6 +14,7 @@ use log::{debug, error};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
 use tokio::sync::{broadcast, Notify};
+use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Shard;
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
@@ -21,7 +22,10 @@ use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresenceP
 
 use std::{env::set_var, error::Error, lazy::SyncOnceCell, sync::Arc};
 
-use crate::config::CONFIG;
+use crate::{
+    cache::{GuildCache, VoiceCache},
+    config::CONFIG,
+};
 
 mod cache;
 mod config;
@@ -102,12 +106,21 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
         shard.start().await?;
 
+        let cache = Arc::new(
+            InMemoryCache::builder()
+                .resource_types(CONFIG.cache.clone().into())
+                .build(),
+        );
+        let guild_cache = GuildCache::new(cache.clone(), shard_id);
+        let voice_cache = VoiceCache::new(cache, shard_id);
+
         let shard_status = Arc::new(state::ShardStatus {
             shard,
             events: broadcast_tx.clone(),
             ready: SyncOnceCell::new(),
             ready_set: Notify::new(),
-            guilds: cache::GuildCache::new(shard_id),
+            guilds: guild_cache,
+            voice: voice_cache,
         });
 
         // Now pipe the events into the broadcast

@@ -3,7 +3,11 @@ use twilight_gateway::Shard;
 
 use std::{lazy::SyncOnceCell, sync::Arc};
 
-use crate::{cache::GuildCache, dispatch::BroadcastMessage, model::JsonObject};
+use crate::{
+    cache::{GuildCache, VoiceCache},
+    dispatch::BroadcastMessage,
+    model::JsonObject,
+};
 
 pub struct ShardStatus {
     pub shard: Shard,
@@ -11,6 +15,7 @@ pub struct ShardStatus {
     pub ready: SyncOnceCell<JsonObject>,
     pub ready_set: Notify,
     pub guilds: GuildCache,
+    pub voice: VoiceCache,
 }
 
 pub type Shards = Vec<Arc<ShardStatus>>;

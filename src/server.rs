@@ -15,6 +15,7 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
+use twilight_model::id::GuildId;
 
 use std::{
     convert::Infallible,
@@ -28,7 +29,7 @@ use std::{
 
 use crate::{
     deserializer::{GatewayEventDeserializer, SequenceInfo},
-    model::Identify,
+    model::{Identify, VoiceStateUpdate},
     state::State,
     upgrade::server_upgrade,
     zlib_sys::Compressor,
@@ -38,10 +39,15 @@ const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":4125
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
 const INVALID_SESSION: &str = r#"{"t":null,"s":null,"op":9,"d":false}"#;
 
+enum SendMessage {
+    Message(TwilightMessage),
+    Voice(GuildId),
+}
+
 async fn forward_shard(
     mut shard_id_rx: UnboundedReceiver<u64>,
     stream_writer: UnboundedSender<Message>,
-    mut shard_send_rx: UnboundedReceiver<TwilightMessage>,
+    mut shard_send_rx: UnboundedReceiver<SendMessage>,
     state: State,
 ) {
     // Wait for the client's IDENTIFY to finish and acquire the shard ID
@@ -99,7 +105,23 @@ async fn forward_shard(
             },
             Some(command) = shard_send_rx.recv() => {
                 // Has to be done here because else shard would be moved
-                let _res = shard_status.shard.send(command).await;
+                match command {
+                    SendMessage::Message(msg) => {
+                        let _res = shard_status.shard.send(msg).await;
+                    },
+                    SendMessage::Voice(guild_id) => {
+                        let payloads = shard_status.voice.get_payloads(guild_id, &mut seq);
+                        for payload in payloads {
+                            if let Ok(serialized) = simd_json::to_string(&payload) {
+                                debug!(
+                                    "[Shard {}] Sending newly created VOICE_STATE_UPDATE/VOICE_SERVER_UPDATE payload",
+                                    shard_id
+                                );
+                                let _res = stream_writer.send(Message::Text(serialized));
+                            };
+                        }
+                    }
+                }
             },
         };
     }
@@ -111,6 +133,9 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     state: State,
     use_zlib: Arc<AtomicBool>,
 ) -> Result<(), Error> {
+    // Just set it to 0 because at least that'll always exist
+    // We will always set it later
+    let mut client_shard_id = 0;
     let mut compress = Compressor::new(15);
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
@@ -202,6 +227,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                     use_zlib.store(compress, Ordering::Relaxed);
                 }
 
+                client_shard_id = shard_id as usize;
                 let _res = shard_id_tx.send(shard_id);
             }
             6 => {
@@ -211,9 +237,38 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 // For now, send an invalid session so they use identify instead
                 let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
             }
+            4 => {
+                debug!("[{}] Client is connecting to voice", addr);
+
+                let voice_state: VoiceStateUpdate = match simd_json::from_str(&mut payload.clone())
+                {
+                    Ok(voice_state) => voice_state,
+                    Err(e) => {
+                        warn!("[{}] Invalid voice state update payload: {:?}", addr, e);
+                        continue;
+                    }
+                };
+
+                // If the bot isn't in this channel already, forward it
+                let is_in_vc = if let Some(channel_id) = voice_state.d.channel_id {
+                    let shard = state.shards[client_shard_id].clone();
+                    shard
+                        .voice
+                        .is_in_channel(voice_state.d.guild_id, channel_id)
+                } else {
+                    false
+                };
+
+                if is_in_vc {
+                    let _res = shard_send_tx.send(SendMessage::Voice(voice_state.d.guild_id));
+                } else {
+                    let _res =
+                        shard_send_tx.send(SendMessage::Message(TwilightMessage::Text(payload)));
+                }
+            }
             _ => {
                 trace!("[{}] Sending {:?} to Discord directly", addr, payload);
-                let _res = shard_send_tx.send(TwilightMessage::Text(payload));
+                let _res = shard_send_tx.send(SendMessage::Message(TwilightMessage::Text(payload)));
             }
         }
     }
