@@ -91,8 +91,11 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .gateway_url(Some(gateway.url.clone()))
             .event_types(CONFIG.cache.clone().into());
 
-        if let Some(activity) = CONFIG.activity.clone() {
+        if let Some(mut activity) = CONFIG.activity.clone() {
+            // Replace {{shard}} with the actual ID
+            activity.name = activity.name.replace("{{shard}}", &shard_id.to_string());
             // Will only error if activity are empty, so we can unwrap
+
             builder = builder.presence(
                 UpdatePresencePayload::new(vec![activity], false, None, CONFIG.status).unwrap(),
             );

@@ -30,7 +30,7 @@ Create a file `config.json` and fill in these fields as you wish:
   "port": 7878,
   "activity": {
     "type": 0,
-    "name": "with kubernetes"
+    "name": "on shard {{shard}} with kubernetes"
   },
   "status": "idle",
   "backpressure": 100,
