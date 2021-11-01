@@ -28,6 +28,7 @@ use std::{
 };
 
 use crate::{
+    config::CONFIG,
     deserializer::{GatewayEventDeserializer, SequenceInfo},
     model::{Identify, VoiceStateUpdate},
     state::State,
@@ -218,6 +219,11 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                         "[{}] Shard ID from client is out of range, disconnecting",
                         addr
                     );
+                    break;
+                }
+
+                if identify.d.token != CONFIG.token {
+                    warn!("[{}] Token from client mismatched, disconnecting", addr);
                     break;
                 }
 

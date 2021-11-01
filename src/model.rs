@@ -17,6 +17,7 @@ pub struct IdentifyInfo {
     #[serde(default)]
     pub compress: Option<bool>,
     pub shard: [u64; 2],
+    pub token: String,
 }
 
 #[derive(Deserialize)]

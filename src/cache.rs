@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use dashmap::DashMap;
 use halfbrown::hashmap;
 use serde::Serialize;
@@ -17,6 +15,8 @@ use twilight_model::{
     id::{ChannelId, GuildId},
     voice::VoiceState,
 };
+
+use std::sync::Arc;
 
 use crate::{config::CONFIG, model::JsonObject};
 
