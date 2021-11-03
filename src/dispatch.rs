@@ -95,7 +95,12 @@ pub async fn shard_latency(shard_status: Arc<ShardStatus>) {
                 .get(0)
                 .map_or(f64::NAN, Duration::as_secs_f64);
 
-            metrics::histogram!("gateway_shard_latency", latency, "shard" => info.id().to_string());
+            metrics::histogram!("gateway_shard_latency_histogram", latency, "shard" => info.id().to_string());
+            metrics::gauge!(
+                "gateway_shard_latency",
+                latency,
+                "shard" => info.id().to_string()
+            );
             metrics::histogram!("gateway_shard_status", connection_status, "shard" => info.id().to_string());
         }
     }
