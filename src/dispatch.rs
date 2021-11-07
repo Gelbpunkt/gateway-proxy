@@ -73,6 +73,7 @@ pub async fn dispatch_events(
             }
         } else if let Event::ShardReconnecting(_) = event {
             debug!("[Shard {}] Reconnecting", shard_id);
+            shard_status.voice.clear();
             let _res = ready_tx.send(None);
         }
     }

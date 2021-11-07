@@ -81,6 +81,10 @@ impl VoiceCache {
         }
     }
 
+    pub fn clear(&self) {
+        self.0.clear();
+    }
+
     pub fn disconnect(&self, guild_id: GuildId) {
         self.0.remove(&guild_id);
     }
