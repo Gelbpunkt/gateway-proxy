@@ -13,14 +13,14 @@ use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use log::{debug, error};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
-use tokio::sync::{broadcast, Notify};
+use tokio::sync::{broadcast, watch};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Shard;
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
-use std::{env::set_var, error::Error, lazy::SyncOnceCell, sync::Arc};
+use std::{env::set_var, error::Error, sync::Arc};
 
 use crate::{
     cache::{GuildCache, VoiceCache},
@@ -117,11 +117,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         let guild_cache = GuildCache::new(cache.clone(), shard_id);
         let voice_cache = VoiceCache::new(cache, shard_id);
 
+        let (ready_tx, ready_rx) = watch::channel(None);
+
         let shard_status = Arc::new(state::ShardStatus {
             shard,
             events: broadcast_tx.clone(),
-            ready: SyncOnceCell::new(),
-            ready_set: Notify::new(),
+            ready: ready_rx,
             guilds: guild_cache,
             voice: voice_cache,
         });
@@ -134,6 +135,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             shard_status.clone(),
             shard_id,
             broadcast_tx,
+            ready_tx,
         ));
 
         // Track the shard latency in metrics

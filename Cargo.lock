@@ -396,6 +396,7 @@ dependencies = [
  "simd-json",
  "tokio",
  "tokio-tungstenite",
+ "tracing",
  "twilight-cache-inmemory",
  "twilight-gateway",
  "twilight-gateway-queue",
@@ -623,9 +624,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.106"
+version = "0.2.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a60553f9a9e039a333b4e9b20573b9e9b9c0bb3a11e201ccc48ef4283456d673"
+checksum = "fbe5e23404da5b4f555ef85ebed98fb4083e55a00c317800bc2a50ede9f3d219"
 
 [[package]]
 name = "libmimalloc-sys"
@@ -1160,9 +1161,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f690853975602e1bfe1ccbf50504d67174e3bcf340f23b5ea9992e0587a52d8"
+checksum = "e466864e431129c7e0d3476b92f20458e5879919a0596c6472738d9fa2d342f8"
 dependencies = [
  "itoa",
  "ryu",
@@ -1384,6 +1385,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "375a639232caf30edfc78e8d89b2d4c375515393e7af7e16f01cd96917fb2105"
 dependencies = [
  "cfg-if 1.0.0",
+ "log",
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
@@ -1441,7 +1443,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.7.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#4b2442e59a22e6ecf3818eaf5c8390b908b4ee6d"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1452,7 +1454,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.7.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#4b2442e59a22e6ecf3818eaf5c8390b908b4ee6d"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1472,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#4b2442e59a22e6ecf3818eaf5c8390b908b4ee6d"
 dependencies = [
  "tokio",
  "tracing",
@@ -1482,7 +1484,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.7.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#4b2442e59a22e6ecf3818eaf5c8390b908b4ee6d"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1498,7 +1500,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.8.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#4b2442e59a22e6ecf3818eaf5c8390b908b4ee6d"
 dependencies = [
  "futures-util",
  "http",
@@ -1508,7 +1510,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.7.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#40eab445d8e47cd2d7e4b8f7dd1fee16d2072b8a"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#4b2442e59a22e6ecf3818eaf5c8390b908b4ee6d"
 dependencies = [
  "bitflags",
  "serde",

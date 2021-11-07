@@ -68,7 +68,8 @@ impl Into<EventTypeFlags> for CacheConfig {
             | EventTypeFlags::GUILD_CREATE
             | EventTypeFlags::GUILD_DELETE
             | EventTypeFlags::GUILD_UPDATE
-            | EventTypeFlags::READY;
+            | EventTypeFlags::READY
+            | EventTypeFlags::SHARD_RECONNECTING;
 
         if self.members {
             flags |= EventTypeFlags::MEMBER_ADD

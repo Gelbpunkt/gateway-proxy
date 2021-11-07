@@ -1,7 +1,10 @@
 use futures_util::StreamExt;
-use log::trace;
+use log::{debug, trace};
 use simd_json::Mutable;
-use tokio::{sync::broadcast, time::interval};
+use tokio::{
+    sync::{broadcast, watch},
+    time::interval,
+};
 use twilight_gateway::{
     shard::{Events, Stage},
     Event,
@@ -11,7 +14,7 @@ use std::{sync::Arc, time::Duration};
 
 use crate::{
     deserializer::{EventTypeInfo, GatewayEventDeserializer, SequenceInfo},
-    model::Ready,
+    model::{JsonObject, Ready},
     state::ShardStatus,
 };
 
@@ -22,6 +25,7 @@ pub async fn dispatch_events(
     shard_status: Arc<ShardStatus>,
     shard_id: u64,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
+    ready_tx: watch::Sender<Option<JsonObject>>,
 ) {
     while let Some(event) = events.next().await {
         shard_status.guilds.update(&event);
@@ -49,8 +53,7 @@ pub async fn dispatch_events(
 
                     // We don't care if it was already set
                     // since this data is timeless
-                    let _res = shard_status.ready.set(ready.d);
-                    shard_status.ready_set.notify_waiters();
+                    let _res = ready_tx.send(Some(ready.d));
 
                     continue;
                 } else if event_name == "RESUMED" {
@@ -68,6 +71,9 @@ pub async fn dispatch_events(
                 );
                 let _res = broadcast_tx.send((payload, sequence));
             }
+        } else if let Event::ShardReconnecting(_) = event {
+            debug!("[Shard {}] Reconnecting", shard_id);
+            let _res = ready_tx.send(None);
         }
     }
 }

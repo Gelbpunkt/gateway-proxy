@@ -1,7 +1,7 @@
-use tokio::sync::{broadcast, Notify};
+use tokio::sync::{broadcast, watch};
 use twilight_gateway::Shard;
 
-use std::{lazy::SyncOnceCell, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     cache::{GuildCache, VoiceCache},
@@ -12,8 +12,7 @@ use crate::{
 pub struct ShardStatus {
     pub shard: Shard,
     pub events: broadcast::Sender<BroadcastMessage>,
-    pub ready: SyncOnceCell<JsonObject>,
-    pub ready_set: Notify,
+    pub ready: watch::Receiver<Option<JsonObject>>,
     pub guilds: GuildCache,
     pub voice: VoiceCache,
 }

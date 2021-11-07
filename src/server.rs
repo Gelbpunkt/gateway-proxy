@@ -56,6 +56,8 @@ async fn forward_shard(
     // Get a handle to the shard
     let shard_status = state.shards[shard_id as usize].clone();
 
+    let mut ready_rx = shard_status.ready.clone();
+
     // Fake sequence number for the client. We update packets to overwrite it
     let mut seq: usize = 0;
 
@@ -65,14 +67,14 @@ async fn forward_shard(
     debug!("[Shard {}] Starting to send events to client", shard_id);
 
     // If there is no READY received for the shard yet, wait for it
-    if shard_status.ready.get().is_none() {
-        shard_status.ready_set.notified().await;
+    if ready_rx.borrow_and_update().is_none() {
+        let _ = ready_rx.changed().await;
     }
 
     // Get a fake ready payload to send to the client
     let ready_payload = shard_status
         .guilds
-        .get_ready_payload(shard_status.ready.get().unwrap().clone(), &mut seq);
+        .get_ready_payload(ready_rx.borrow().clone().unwrap(), &mut seq);
 
     if let Ok(serialized) = simd_json::to_string(&ready_payload) {
         debug!("[Shard {}] Sending newly created READY", shard_id);
@@ -124,6 +126,13 @@ async fn forward_shard(
                     }
                 }
             },
+            _ = ready_rx.changed() => {
+                if ready_rx.borrow().is_none() {
+                    debug!("[Shard {}] Temporary disconnect, stopped forwarding events", shard_id);
+                    let _ = ready_rx.changed().await;
+                    debug!("[Shard {}] Reconnected, starting to forward events again", shard_id);
+                }
+            }
         };
     }
 }
@@ -255,13 +264,17 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                     }
                 };
 
+                let shard = state.shards[client_shard_id].clone();
+
                 // If the bot isn't in this channel already, forward it
                 let is_in_vc = if let Some(channel_id) = voice_state.d.channel_id {
-                    let shard = state.shards[client_shard_id].clone();
                     shard
                         .voice
                         .is_in_channel(voice_state.d.guild_id, channel_id)
                 } else {
+                    // It is disconnecting
+                    shard.voice.disconnect(voice_state.d.guild_id);
+
                     false
                 };
 

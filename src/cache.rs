@@ -81,6 +81,10 @@ impl VoiceCache {
         }
     }
 
+    pub fn disconnect(&self, guild_id: GuildId) {
+        self.0.remove(&guild_id);
+    }
+
     pub fn update(&self, value: &GatewayEvent) {
         match value {
             GatewayEvent::VoiceServerUpdate(voice_server_update) => {
