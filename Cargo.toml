@@ -26,23 +26,23 @@ simd-json = { version = "0.4", default-features = false, features = [
     "serde_impl"
 ] }
 # Better match twilight-gateway here
-tokio-tungstenite = { version = "0.14", default-features = false }
+tokio-tungstenite = { version = "0.16", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "macros",
     "rt-multi-thread"
 ] }
 tracing = { version = "0.1", default-features = false, features = ["log"] }
-twilight-cache-inmemory = { git = "https://github.com/twilight-rs/twilight.git", branch = "next" }
-twilight-gateway = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = [
+twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "rustls-0.20" }
+twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "rustls-0.20", default-features = false, features = [
     "zlib-simd",
     "rustls-webpki-roots",
     "tracing"
 ] }
-twilight-gateway-queue = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = ["rustls-webpki-roots"] }
-twilight-http = { git = "https://github.com/twilight-rs/twilight.git", branch = "next", default-features = false, features = [
+twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "rustls-0.20", default-features = false, features = ["rustls-webpki-roots"] }
+twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "rustls-0.20", default-features = false, features = [
     "rustls-webpki-roots"
 ] }
-twilight-model = { git = "https://github.com/twilight-rs/twilight.git", branch = "next" }
+twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "rustls-0.20" }
 libz-sys = { version = "1.1", default-features = false, features = ["zlib-ng"] }
 
 [profile.release]
