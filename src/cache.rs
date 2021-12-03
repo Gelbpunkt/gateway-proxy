@@ -238,7 +238,7 @@ impl GuildCache {
                         avatar: member.avatar().map(ToString::to_string),
                         deaf: member.deaf().unwrap_or_default(),
                         guild_id: member.guild_id(),
-                        joined_at: member.joined_at().unwrap(), // Always Some
+                        joined_at: member.joined_at(),
                         mute: member.mute().unwrap_or_default(),
                         nick: member.nick().map(ToString::to_string),
                         pending: member.pending(),
