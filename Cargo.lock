@@ -1561,8 +1561,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-cache-inmemory"
-version = "0.7.2"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#adb698218f2e06dd80fa27e40baf4d52f373fd10"
+version = "0.8.0"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b94ebdd6dc5a726d052bddc5084930607ed0cbb5"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1572,8 +1572,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-gateway"
-version = "0.7.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#adb698218f2e06dd80fa27e40baf4d52f373fd10"
+version = "0.8.0"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b94ebdd6dc5a726d052bddc5084930607ed0cbb5"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1592,8 +1592,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-gateway-queue"
-version = "0.7.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#adb698218f2e06dd80fa27e40baf4d52f373fd10"
+version = "0.8.0"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b94ebdd6dc5a726d052bddc5084930607ed0cbb5"
 dependencies = [
  "tokio",
  "twilight-http",
@@ -1601,8 +1601,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-http"
-version = "0.7.3"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#adb698218f2e06dd80fa27e40baf4d52f373fd10"
+version = "0.8.0"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b94ebdd6dc5a726d052bddc5084930607ed0cbb5"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1619,7 +1619,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.8.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#adb698218f2e06dd80fa27e40baf4d52f373fd10"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b94ebdd6dc5a726d052bddc5084930607ed0cbb5"
 dependencies = [
  "futures-util",
  "http",
@@ -1628,8 +1628,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-model"
-version = "0.7.3"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#adb698218f2e06dd80fa27e40baf4d52f373fd10"
+version = "0.8.0"
+source = "git+https://github.com/twilight-rs/twilight.git?branch=next#b94ebdd6dc5a726d052bddc5084930607ed0cbb5"
 dependencies = [
  "bitflags",
  "serde",
