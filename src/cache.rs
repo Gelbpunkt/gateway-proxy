@@ -12,7 +12,10 @@ use twilight_model::{
         OpCode,
     },
     guild::{Emoji, Guild, Member, Role},
-    id::{ChannelId, GuildId},
+    id::{
+        marker::{ChannelMarker, GuildMarker},
+        Id,
+    },
     voice::VoiceState,
 };
 
@@ -38,14 +41,18 @@ pub enum Event {
     VoiceStateUpdate(VoiceState),
 }
 
-pub struct VoiceCache(DashMap<GuildId, Vec<Event>>, Arc<InMemoryCache>, u64);
+pub struct VoiceCache(
+    DashMap<Id<GuildMarker>, Vec<Event>>,
+    Arc<InMemoryCache>,
+    u64,
+);
 
 impl VoiceCache {
     pub fn new(cache: Arc<InMemoryCache>, shard_id: u64) -> Self {
         Self(DashMap::new(), cache, shard_id)
     }
 
-    pub fn is_in_channel(&self, guild_id: GuildId, channel_id: ChannelId) -> bool {
+    pub fn is_in_channel(&self, guild_id: Id<GuildMarker>, channel_id: Id<ChannelMarker>) -> bool {
         if let Some(payloads) = self.0.get(&guild_id) {
             for payload in payloads.iter() {
                 if let Event::VoiceStateUpdate(state) = payload {
@@ -57,7 +64,7 @@ impl VoiceCache {
         false
     }
 
-    pub fn get_payloads(&self, guild_id: GuildId, sequence: &mut usize) -> Vec<Payload> {
+    pub fn get_payloads(&self, guild_id: Id<GuildMarker>, sequence: &mut usize) -> Vec<Payload> {
         if let Some(events) = self.0.get(&guild_id) {
             events
                 .iter()
@@ -85,7 +92,7 @@ impl VoiceCache {
         self.0.clear();
     }
 
-    pub fn disconnect(&self, guild_id: GuildId) {
+    pub fn disconnect(&self, guild_id: Id<GuildMarker>) {
         self.0.remove(&guild_id);
     }
 
@@ -162,7 +169,7 @@ impl GuildCache {
         }
     }
 
-    fn channels_in_guild(&self, guild_id: GuildId) -> Vec<GuildChannel> {
+    fn channels_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildChannel> {
         self.0
             .iter()
             .guild_channels()
@@ -181,7 +188,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn presences_in_guild(&self, guild_id: GuildId) -> Vec<Presence> {
+    fn presences_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Presence> {
         self.0
             .iter()
             .presences()
@@ -203,7 +210,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn emojis_in_guild(&self, guild_id: GuildId) -> Vec<Emoji> {
+    fn emojis_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Emoji> {
         self.0
             .iter()
             .emojis()
@@ -228,7 +235,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn members_in_guild(&self, guild_id: GuildId) -> Vec<Member> {
+    fn members_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Member> {
         self.0
             .iter()
             .members()
@@ -253,7 +260,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn roles_in_guild(&self, guild_id: GuildId) -> Vec<Role> {
+    fn roles_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Role> {
         self.0
             .iter()
             .roles()
@@ -267,7 +274,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn stage_instances_in_guild(&self, guild_id: GuildId) -> Vec<StageInstance> {
+    fn stage_instances_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<StageInstance> {
         self.0
             .iter()
             .stage_instances()
@@ -281,7 +288,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn stickers_in_guild(&self, guild_id: GuildId) -> Vec<Sticker> {
+    fn stickers_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Sticker> {
         self.0
             .iter()
             .stickers()
@@ -309,7 +316,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn voice_states_in_guild(&self, guild_id: GuildId) -> Vec<VoiceState> {
+    fn voice_states_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<VoiceState> {
         self.0
             .iter()
             .voice_states()
@@ -323,7 +330,7 @@ impl GuildCache {
             .collect()
     }
 
-    fn threads_in_guild(&self, guild_id: GuildId) -> Vec<GuildChannel> {
+    fn threads_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildChannel> {
         self.0
             .iter()
             .guild_channels()

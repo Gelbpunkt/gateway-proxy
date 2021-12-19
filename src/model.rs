@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use simd_json::OwnedValue;
-use twilight_model::id::{ChannelId, GuildId};
+use twilight_model::id::{
+    marker::{ChannelMarker, GuildMarker},
+    Id,
+};
 
 #[derive(Deserialize)]
 pub struct Identify {
@@ -22,9 +25,9 @@ pub struct IdentifyInfo {
 
 #[derive(Deserialize)]
 pub struct VoiceState {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     #[serde(default)]
-    pub channel_id: Option<ChannelId>,
+    pub channel_id: Option<Id<ChannelMarker>>,
 }
 
 #[derive(Deserialize)]

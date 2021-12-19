@@ -15,7 +15,7 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 use std::{
     convert::Infallible,
@@ -42,7 +42,7 @@ const INVALID_SESSION: &str = r#"{"t":null,"s":null,"op":9,"d":false}"#;
 
 enum SendMessage {
     Message(TwilightMessage),
-    Voice(GuildId),
+    Voice(Id<GuildMarker>),
 }
 
 async fn forward_shard(
