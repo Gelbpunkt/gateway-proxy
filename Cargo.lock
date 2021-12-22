@@ -863,9 +863,9 @@ dependencies = [
 
 [[package]]
 name = "num_cpus"
-version = "1.13.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
+checksum = "19e64526ebdee182341572e50e9ad03965aa510cd94427a4549448f285e957a1"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -1517,7 +1517,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.8.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#672e126d351839e0fe90836ebe120a720672f550"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#a0a47a49a60fcfb6819fa39137191f825e57a9c8"
 dependencies = [
  "bitflags",
  "dashmap 5.0.0",
@@ -1528,12 +1528,13 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.8.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#672e126d351839e0fe90836ebe120a720672f550"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#a0a47a49a60fcfb6819fa39137191f825e57a9c8"
 dependencies = [
  "bitflags",
  "flate2",
  "futures-util",
  "leaky-bucket-lite",
+ "rustls",
  "serde",
  "serde_json",
  "tokio",
@@ -1543,12 +1544,13 @@ dependencies = [
  "twilight-http",
  "twilight-model",
  "url",
+ "webpki-roots",
 ]
 
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.8.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#672e126d351839e0fe90836ebe120a720672f550"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#a0a47a49a60fcfb6819fa39137191f825e57a9c8"
 dependencies = [
  "tokio",
  "twilight-http",
@@ -1557,7 +1559,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.8.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#672e126d351839e0fe90836ebe120a720672f550"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#a0a47a49a60fcfb6819fa39137191f825e57a9c8"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1574,7 +1576,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.8.0"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#672e126d351839e0fe90836ebe120a720672f550"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#a0a47a49a60fcfb6819fa39137191f825e57a9c8"
 dependencies = [
  "futures-util",
  "http",
@@ -1584,7 +1586,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.8.1"
-source = "git+https://github.com/twilight-rs/twilight.git?branch=next#672e126d351839e0fe90836ebe120a720672f550"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#a0a47a49a60fcfb6819fa39137191f825e57a9c8"
 dependencies = [
  "bitflags",
  "serde",

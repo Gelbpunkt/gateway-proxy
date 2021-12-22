@@ -38,6 +38,7 @@ Create a file `config.json` and fill in these fields as you wish:
     "channels": false,
     "presences": false,
     "emojis": false,
+    "current_member": false,
     "members": false,
     "roles": false,
     "stage_instances": false,

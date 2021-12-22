@@ -38,6 +38,7 @@ pub struct CacheConfig {
     pub channels: bool,
     pub presences: bool,
     pub emojis: bool,
+    pub current_member: bool,
     pub members: bool,
     pub roles: bool,
     pub stage_instances: bool,
@@ -51,6 +52,7 @@ impl Default for CacheConfig {
         Self {
             channels: true,
             presences: false,
+            current_member: true,
             emojis: false,
             members: false,
             roles: true,
@@ -71,7 +73,7 @@ impl Into<EventTypeFlags> for CacheConfig {
             | EventTypeFlags::READY
             | EventTypeFlags::SHARD_RECONNECTING;
 
-        if self.members {
+        if self.members || self.current_member {
             flags |= EventTypeFlags::MEMBER_ADD
                 | EventTypeFlags::MEMBER_REMOVE
                 | EventTypeFlags::MEMBER_UPDATE;
@@ -125,6 +127,10 @@ impl Into<ResourceType> for CacheConfig {
 
         if self.emojis {
             resource_types |= ResourceType::EMOJI;
+        }
+
+        if self.current_member {
+            resource_types |= ResourceType::MEMBER_CURRENT;
         }
 
         if self.members {

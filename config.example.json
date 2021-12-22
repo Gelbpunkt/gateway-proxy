@@ -6,6 +6,7 @@
         "channels": false,
         "presences": false,
         "emojis": false,
+        "current_member": false,
         "members": false,
         "roles": false,
         "stage_instances": false,
