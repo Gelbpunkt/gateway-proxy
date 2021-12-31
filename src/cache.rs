@@ -171,183 +171,206 @@ impl GuildCache {
 
     fn channels_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildChannel> {
         self.0
-            .iter()
-            .guild_channels()
-            .filter_map(|channel| {
-                if channel.guild_id() == guild_id
-                    && !matches!(
-                        channel.value().resource(),
-                        GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
-                    )
-                {
-                    Some(channel.value().resource().clone())
-                } else {
-                    None
-                }
+            .guild_channels(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .filter_map(|channel_id| {
+                        let channel = self.0.guild_channel(*channel_id).unwrap();
+
+                        if !matches!(
+                            channel.value().resource(),
+                            GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
+                        ) {
+                            Some(channel.value().resource().clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn presences_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Presence> {
         self.0
-            .iter()
-            .presences()
-            .filter_map(|presence| {
-                if presence.guild_id() == guild_id {
-                    Some(Presence {
-                        activities: presence.activities().to_vec(),
-                        client_status: presence.client_status().clone(),
-                        guild_id: presence.guild_id(),
-                        status: presence.status(),
-                        user: UserOrId::UserId {
-                            id: presence.user_id(),
-                        },
+            .guild_presences(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|user_id| {
+                        let presence = self.0.presence(guild_id, *user_id).unwrap();
+
+                        Presence {
+                            activities: presence.activities().to_vec(),
+                            client_status: presence.client_status().clone(),
+                            guild_id: presence.guild_id(),
+                            status: presence.status(),
+                            user: UserOrId::UserId {
+                                id: presence.user_id(),
+                            },
+                        }
                     })
-                } else {
-                    None
-                }
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn emojis_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Emoji> {
         self.0
-            .iter()
-            .emojis()
-            .filter_map(|emoji| {
-                if emoji.guild_id() == guild_id {
-                    Some(Emoji {
-                        animated: emoji.animated(),
-                        available: emoji.available(),
-                        id: emoji.id(),
-                        managed: emoji.managed(),
-                        name: emoji.name().to_string(),
-                        require_colons: emoji.require_colons(),
-                        roles: emoji.roles().to_vec(),
-                        user: emoji
-                            .user_id()
-                            .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
+            .guild_emojis(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|emoji_id| {
+                        let emoji = self.0.emoji(*emoji_id).unwrap();
+
+                        Emoji {
+                            animated: emoji.animated(),
+                            available: emoji.available(),
+                            id: emoji.id(),
+                            managed: emoji.managed(),
+                            name: emoji.name().to_string(),
+                            require_colons: emoji.require_colons(),
+                            roles: emoji.roles().to_vec(),
+                            user: emoji
+                                .user_id()
+                                .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
+                        }
                     })
-                } else {
-                    None
-                }
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn members_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Member> {
         self.0
-            .iter()
-            .members()
-            .filter_map(|member| {
-                if member.guild_id() == guild_id {
-                    Some(Member {
-                        avatar: member.avatar().map(ToString::to_string),
-                        communication_disabled_until: member.communication_disabled_until(),
-                        deaf: member.deaf().unwrap_or_default(),
-                        guild_id: member.guild_id(),
-                        joined_at: member.joined_at(),
-                        mute: member.mute().unwrap_or_default(),
-                        nick: member.nick().map(ToString::to_string),
-                        pending: member.pending(),
-                        premium_since: member.premium_since(),
-                        roles: member.roles().to_vec(),
-                        user: self.0.user(member.user_id()).unwrap().value().clone(), // FIX?
+            .guild_members(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|user_id| {
+                        let member = self.0.member(guild_id, *user_id).unwrap();
+
+                        Member {
+                            avatar: member.avatar().map(ToString::to_string),
+                            communication_disabled_until: member.communication_disabled_until(),
+                            deaf: member.deaf().unwrap_or_default(),
+                            guild_id: member.guild_id(),
+                            joined_at: member.joined_at(),
+                            mute: member.mute().unwrap_or_default(),
+                            nick: member.nick().map(ToString::to_string),
+                            pending: member.pending(),
+                            premium_since: member.premium_since(),
+                            roles: member.roles().to_vec(),
+                            user: self.0.user(member.user_id()).unwrap().value().clone(), // FIX?
+                        }
                     })
-                } else {
-                    None
-                }
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn roles_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Role> {
         self.0
-            .iter()
-            .roles()
-            .filter_map(|role| {
-                if role.guild_id() == guild_id {
-                    Some(role.value().resource().clone())
-                } else {
-                    None
-                }
+            .guild_roles(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|role_id| self.0.role(*role_id).unwrap().value().resource().clone())
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn stage_instances_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<StageInstance> {
         self.0
-            .iter()
-            .stage_instances()
-            .filter_map(|stage| {
-                if stage.guild_id() == guild_id {
-                    Some(stage.value().resource().clone())
-                } else {
-                    None
-                }
+            .guild_stage_instances(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|stage_id| {
+                        self.0
+                            .stage_instance(*stage_id)
+                            .unwrap()
+                            .value()
+                            .resource()
+                            .clone()
+                    })
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn stickers_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Sticker> {
         self.0
-            .iter()
-            .stickers()
-            .filter_map(|sticker| {
-                if sticker.guild_id() == guild_id {
-                    Some(Sticker {
-                        available: sticker.available(),
-                        description: Some(sticker.description().to_string()),
-                        format_type: sticker.format_type(),
-                        guild_id: Some(sticker.guild_id()),
-                        id: sticker.id(),
-                        kind: sticker.kind(),
-                        name: sticker.name().to_string(),
-                        pack_id: sticker.pack_id(),
-                        sort_value: sticker.sort_value(),
-                        tags: sticker.tags().to_string(),
-                        user: sticker
-                            .user_id()
-                            .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
+            .guild_stickers(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|sticker_id| {
+                        let sticker = self.0.sticker(*sticker_id).unwrap();
+
+                        Sticker {
+                            available: sticker.available(),
+                            description: Some(sticker.description().to_string()),
+                            format_type: sticker.format_type(),
+                            guild_id: Some(sticker.guild_id()),
+                            id: sticker.id(),
+                            kind: sticker.kind(),
+                            name: sticker.name().to_string(),
+                            pack_id: sticker.pack_id(),
+                            sort_value: sticker.sort_value(),
+                            tags: sticker.tags().to_string(),
+                            user: sticker
+                                .user_id()
+                                .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
+                        }
                     })
-                } else {
-                    None
-                }
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn voice_states_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<VoiceState> {
         self.0
-            .iter()
-            .voice_states()
-            .filter_map(|voice| {
-                if voice.key().0 == guild_id {
-                    Some(voice.value().clone())
-                } else {
-                    None
-                }
+            .guild_voice_states(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .map(|user_id| {
+                        self.0
+                            .voice_state(*user_id, guild_id)
+                            .unwrap()
+                            .value()
+                            .clone()
+                    })
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     fn threads_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildChannel> {
         self.0
-            .iter()
-            .guild_channels()
-            .filter_map(|channel| {
-                if channel.guild_id() == guild_id
-                    && matches!(
-                        channel.value().resource(),
-                        GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
-                    )
-                {
-                    Some(channel.value().resource().clone())
-                } else {
-                    None
-                }
+            .guild_channels(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .filter_map(|channel_id| {
+                        let channel = self.0.guild_channel(*channel_id).unwrap();
+
+                        if matches!(
+                            channel.value().resource(),
+                            GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
+                        ) {
+                            Some(channel.value().resource().clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
             })
-            .collect()
+            .unwrap()
     }
 
     pub fn get_guild_payloads<'a>(
@@ -425,6 +448,7 @@ impl GuildCache {
                     owner: guild.owner(),
                     permissions: guild.permissions(),
                     preferred_locale: guild.preferred_locale().to_string(),
+                    premium_progress_bar_enabled: guild.premium_progress_bar_enabled(),
                     premium_subscription_count: guild.premium_subscription_count(),
                     premium_tier: guild.premium_tier(),
                     presences,
