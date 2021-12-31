@@ -7,8 +7,8 @@ use hyper::{
     http::StatusCode,
     upgrade, Body, Request, Response,
 };
-use log::error;
 use sha1::{Digest, Sha1};
+use tracing::error;
 
 use std::{
     convert::Infallible,

@@ -7,17 +7,11 @@ edition = "2021"
 [dependencies]
 base64 = "0.13"
 dashmap = "5.0"
-env_logger = { version = "0.9", default-features = false, features = [
-    "termcolor",
-    "atty",
-    "humantime"
-] }
 flate2 = { version = "1.0", default-features = false, features = ["zlib-ng-compat"] }
 futures-util = { version = "0.3", default-features = false }
 halfbrown = "0.1"
 hyper = { version = "0.14", default-features = false, features = ["server", "http1", "http2"] }
 libc = { version = "0.2", default-features = false }
-log = "0.4"
 metrics = { version = "0.17", default-features = false, features = ["std"] }
 metrics-exporter-prometheus = { version = "0.7", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = ["override"] }
@@ -30,9 +24,17 @@ simd-json = { version = "0.4", default-features = false, features = [
 tokio-tungstenite = { version = "0.16", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "macros",
+    "parking_lot",
     "rt-multi-thread"
 ] }
 tracing = { version = "0.1", default-features = false, features = ["log"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "ansi",
+    "env-filter",
+    "fmt",
+    "parking_lot",
+    "std"
+] }
 twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
 twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
     "zlib-simd",

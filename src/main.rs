@@ -10,10 +10,10 @@
     clippy::from_over_into
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
-use log::{debug, error};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
 use tokio::sync::{broadcast, watch};
+use tracing::{debug, error, info};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Shard;
 use twilight_gateway_queue::{LargeBotQueue, Queue};
@@ -54,7 +54,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     unsafe { set_os_handlers() };
 
     set_var("RUST_LOG", CONFIG.log_level.clone());
-    env_logger::builder().format_timestamp_millis().init();
+
+    tracing_subscriber::fmt::init();
 
     // Set up metrics collection
     let recorder = PrometheusBuilder::new().build();
@@ -82,6 +83,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     // Create all shards
     let mut shards: state::Shards = Vec::with_capacity(shard_count as usize);
+
+    info!("Creating {} shards", shard_count);
 
     for shard_id in 0..shard_count {
         let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)

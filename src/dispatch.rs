@@ -1,10 +1,10 @@
 use futures_util::StreamExt;
-use log::{debug, trace};
 use simd_json::Mutable;
 use tokio::{
     sync::{broadcast, watch},
     time::interval,
 };
+use tracing::{debug, trace};
 use twilight_gateway::{
     shard::{Events, Stage},
     Event,

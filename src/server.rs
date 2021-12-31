@@ -5,7 +5,6 @@ use hyper::{
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
-use log::{debug, error, info, trace, warn};
 use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
@@ -15,6 +14,7 @@ use tokio_tungstenite::{
     tungstenite::{protocol::Role, Error, Message},
     WebSocketStream,
 };
+use tracing::{debug, error, info, trace, warn};
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 use twilight_model::id::{marker::GuildMarker, Id};
 
