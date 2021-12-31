@@ -71,25 +71,27 @@ async fn forward_shard(
         let _ = ready_rx.changed().await;
     }
 
-    // Get a fake ready payload to send to the client
-    let ready_payload = shard_status
-        .guilds
-        .get_ready_payload(ready_rx.borrow().clone().unwrap(), &mut seq);
+    {
+        // Get a fake ready payload to send to the client
+        let ready_payload = shard_status
+            .guilds
+            .get_ready_payload(ready_rx.borrow().clone().unwrap(), &mut seq);
 
-    if let Ok(serialized) = simd_json::to_string(&ready_payload) {
-        debug!("[Shard {}] Sending newly created READY", shard_id);
-        let _res = stream_writer.send(Message::Text(serialized));
-    };
-
-    // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
-    for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
-        if let Ok(serialized) = simd_json::to_string(&payload) {
-            trace!(
-                "[Shard {}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
-                shard_id
-            );
+        if let Ok(serialized) = simd_json::to_string(&ready_payload) {
+            debug!("[Shard {}] Sending newly created READY", shard_id);
             let _res = stream_writer.send(Message::Text(serialized));
         };
+
+        // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
+        for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
+            if let Ok(serialized) = simd_json::to_string(&payload) {
+                trace!(
+                    "[Shard {}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
+                    shard_id
+                );
+                let _res = stream_writer.send(Message::Text(serialized));
+            };
+        }
     }
 
     loop {

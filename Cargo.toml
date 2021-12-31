@@ -35,12 +35,14 @@ tracing = { version = "0.1", default-features = false, features = ["log"] }
 twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
 twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
     "zlib-simd",
+    "simd-json",
     "rustls-webpki-roots",
     "tracing"
 ] }
 twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = ["rustls-webpki-roots"] }
 twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
     "rustls-webpki-roots",
+    "simd-json",
     "trust-dns"
 ] }
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }

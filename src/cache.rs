@@ -243,6 +243,7 @@ impl GuildCache {
                 if member.guild_id() == guild_id {
                     Some(Member {
                         avatar: member.avatar().map(ToString::to_string),
+                        communication_disabled_until: member.communication_disabled_until(),
                         deaf: member.deaf().unwrap_or_default(),
                         guild_id: member.guild_id(),
                         joined_at: member.joined_at(),
