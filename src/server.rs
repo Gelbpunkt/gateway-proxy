@@ -1,3 +1,4 @@
+use flate2::{Compress, Compression, FlushCompress};
 use futures_util::{Future, SinkExt, StreamExt};
 use hyper::{
     server::conn::AddrStream,
@@ -33,7 +34,6 @@ use crate::{
     model::{Identify, VoiceStateUpdate},
     state::State,
     upgrade::server_upgrade,
-    zlib_sys::Compressor,
 };
 
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
@@ -148,7 +148,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     // Just set it to 0 because at least that'll always exist
     // We will always set it later
     let mut client_shard_id = 0;
-    let mut compress = Compressor::new(15);
+    let mut compress = Compress::new(Compression::fast(), true);
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
@@ -165,7 +165,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             if use_zlib_clone.load(Ordering::Relaxed) {
                 let mut compressed = Vec::with_capacity(msg.len());
                 compress
-                    .compress(&msg.into_data(), &mut compressed)
+                    .compress_vec(&msg.into_data(), &mut compressed, FlushCompress::Sync)
                     .unwrap();
 
                 sink.send(Message::Binary(compressed)).await?;

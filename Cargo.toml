@@ -12,6 +12,7 @@ env_logger = { version = "0.9", default-features = false, features = [
     "atty",
     "humantime"
 ] }
+flate2 = { version = "1.0", default-features = false, features = ["zlib-ng-compat"] }
 futures-util = { version = "0.3", default-features = false }
 halfbrown = "0.1"
 hyper = { version = "0.14", default-features = false, features = ["server", "http1", "http2"] }
@@ -46,7 +47,6 @@ twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "c
     "trust-dns"
 ] }
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
-libz-sys = { version = "1.1", default-features = false, features = ["zlib-ng"] }
 
 [profile.release]
 codegen-units = 1

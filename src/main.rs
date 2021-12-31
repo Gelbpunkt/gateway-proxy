@@ -35,7 +35,6 @@ mod model;
 mod server;
 mod state;
 mod upgrade;
-mod zlib_sys;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
