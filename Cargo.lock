@@ -609,9 +609,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "leaky-bucket-lite"
-version = "0.2.2"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cbc90428928528dc9ad276fe4d50d30aa26b6a148006e0269ef6915357bad16"
+checksum = "5774988d5facf43b785bfe0b2bbfa777daa22c6bae74a314e8b58563e5752771"
 dependencies = [
  "tokio",
 ]
@@ -1130,9 +1130,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.132"
+version = "1.0.133"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b9875c23cf305cd1fd7eb77234cbb705f21ea6a72c637a5c6db5fe4b8e7f008"
+checksum = "97565067517b60e2d1ea8b268e59ce036de907ac523ad83a0475da04e818989a"
 dependencies = [
  "serde_derive",
 ]
@@ -1149,9 +1149,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.132"
+version = "1.0.133"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc0db5cb2556c0e558887d9bbdcf6ac4471e83ff66cf696e5419024d1606276"
+checksum = "ed201699328568d8d08208fdd080e3ff594e6c422e438b6705905da01005d537"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1160,9 +1160,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.73"
+version = "1.0.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcbd0344bc6533bc7ec56df11d42fb70f1b912351c0825ccb7211b59d8af7cf5"
+checksum = "ee2bb9cd061c5865d345bb02ca49fcef1391741b672b54a0bf7b679badec3142"
 dependencies = [
  "itoa 1.0.1",
  "ryu",
@@ -1541,7 +1541,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "bitflags",
  "dashmap 5.0.0",
@@ -1552,7 +1552,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.8.2"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1575,7 +1575,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.8.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "tokio",
  "twilight-http",
@@ -1584,7 +1584,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1603,7 +1603,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.8.2"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "futures-util",
  "http",
@@ -1613,7 +1613,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "bitflags",
  "serde",
@@ -1626,7 +1626,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.9.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#fe980990e7a97150cb17accb7ae22ccfecd0de47"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#4b6bc20ea32b9f6ca0579e7da0c47c790c4702e4"
 dependencies = [
  "twilight-model",
 ]
