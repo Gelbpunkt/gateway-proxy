@@ -154,7 +154,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
     let (mut sink, mut stream) = stream.split();
 
-    // Because we wait for READY later, HELLO needs to be sent now
+    // Because we wait for IDENTIFY later, HELLO needs to be sent now
     // and optionally compressed!
     if use_zlib {
         let mut compressed = Vec::with_capacity(HELLO.len());
