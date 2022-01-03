@@ -8,7 +8,10 @@ use hyper::{
 use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    sync::{
+        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+        oneshot,
+    },
 };
 use tokio_tungstenite::{
     tungstenite::{protocol::Role, Error, Message},
@@ -18,15 +21,7 @@ use tracing::{debug, error, info, trace, warn};
 use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 use twilight_model::id::{marker::GuildMarker, Id};
 
-use std::{
-    convert::Infallible,
-    net::SocketAddr,
-    pin::Pin,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-};
+use std::{convert::Infallible, net::SocketAddr, pin::Pin, sync::Arc};
 
 use crate::{
     config::CONFIG,
@@ -143,8 +138,13 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     addr: SocketAddr,
     stream: S,
     state: State,
-    use_zlib: Arc<AtomicBool>,
+    mut use_zlib: bool,
 ) -> Result<(), Error> {
+    // We use a oneshot channel to tell the forwarding task whether the IDENTIFY
+    // contained a compression request
+    let (compress_tx, compress_rx) = oneshot::channel();
+    let mut compress_tx = Some(compress_tx);
+
     // Just set it to 0 because at least that'll always exist
     // We will always set it later
     let mut client_shard_id = 0;
@@ -154,15 +154,31 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
     let (mut sink, mut stream) = stream.split();
 
+    // Because we wait for READY later, HELLO needs to be sent now
+    // and optionally compressed!
+    if use_zlib {
+        let mut compressed = Vec::with_capacity(HELLO.len());
+        compress
+            .compress_vec(HELLO.as_bytes(), &mut compressed, FlushCompress::Sync)
+            .unwrap();
+
+        sink.send(Message::Binary(compressed)).await?;
+    } else {
+        sink.send(Message::Text(HELLO.to_string())).await?;
+    }
+
     // Write all messages from a queue to the sink
     let (stream_writer, mut stream_receiver) = unbounded_channel::<Message>();
 
-    let use_zlib_clone = use_zlib.clone();
     let sink_task = tokio::spawn(async move {
+        if compress_rx.await.contains(&Some(true)) {
+            use_zlib = true;
+        }
+
         while let Some(msg) = stream_receiver.recv().await {
             trace!("[{}] Sending {:?}", addr, msg);
 
-            if use_zlib_clone.load(Ordering::Relaxed) {
+            if use_zlib {
                 let mut compressed = Vec::with_capacity(msg.len());
                 compress
                     .compress_vec(&msg.into_data(), &mut compressed, FlushCompress::Sync)
@@ -187,8 +203,6 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
         shard_send_rx,
         state.clone(),
     ));
-
-    let _res = stream_writer.send(Message::Text(HELLO.to_string()));
 
     while let Some(Ok(msg)) = stream.next().await {
         let data = msg.into_data();
@@ -240,8 +254,8 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
                 trace!("[{}] Shard ID is {:?}", addr, shard_id);
 
-                if let Some(compress) = identify.d.compress {
-                    use_zlib.store(compress, Ordering::Relaxed);
+                if let Some(sender) = compress_tx.take() {
+                    let _res = sender.send(identify.d.compress);
                 }
 
                 client_shard_id = shard_id as usize;

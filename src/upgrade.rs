@@ -10,14 +10,7 @@ use hyper::{
 use sha1::{Digest, Sha1};
 use tracing::error;
 
-use std::{
-    convert::Infallible,
-    net::SocketAddr,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-};
+use std::{convert::Infallible, net::SocketAddr};
 
 use crate::{server::handle_client, state::State};
 
@@ -28,15 +21,11 @@ pub async fn server_upgrade(
     mut request: Request<Body>,
     state: State,
 ) -> Result<Response<Body>, Infallible> {
-    // Track whether the client requested zlib encoding
-    let use_zlib = Arc::new(AtomicBool::new(false));
-
     let uri = request.uri();
     let query = uri.query();
 
-    if query.contains(&"compress=zlib-stream") {
-        use_zlib.store(true, Ordering::Relaxed);
-    }
+    // Track whether the client requested zlib encoding
+    let use_zlib = query.contains(&"compress=zlib-stream");
 
     let mut response = Response::new(Body::empty());
 

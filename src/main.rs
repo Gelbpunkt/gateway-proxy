@@ -14,6 +14,7 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
 use tokio::sync::{broadcast, watch};
 use tracing::{debug, error, info};
+use tracing_subscriber::EnvFilter;
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Shard;
 use twilight_gateway_queue::{LargeBotQueue, Queue};
@@ -55,7 +56,9 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     set_var("RUST_LOG", CONFIG.log_level.clone());
 
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     // Set up metrics collection
     let recorder = PrometheusBuilder::new().build();

@@ -178,13 +178,13 @@ impl GuildCache {
                     .filter_map(|channel_id| {
                         let channel = self.0.guild_channel(*channel_id).unwrap();
 
-                        if !matches!(
+                        if matches!(
                             channel.value().resource(),
                             GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
                         ) {
-                            Some(channel.value().resource().clone())
-                        } else {
                             None
+                        } else {
+                            Some(channel.value().resource().clone())
                         }
                     })
                     .collect()
