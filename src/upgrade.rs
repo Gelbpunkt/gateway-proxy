@@ -7,7 +7,7 @@ use hyper::{
     http::StatusCode,
     upgrade, Body, Request, Response,
 };
-use sha1::{Digest, Sha1};
+use ring::digest;
 use tracing::error;
 
 use std::{convert::Infallible, net::SocketAddr};
@@ -45,10 +45,10 @@ pub async fn server_upgrade(
 
     let key = request.headers().get(SEC_WEBSOCKET_KEY).unwrap();
 
-    let mut hasher = Sha1::new();
-    hasher.update(key);
-    hasher.update(GUID);
-    let accept_key = encode(hasher.finalize());
+    let mut ctx = digest::Context::new(&digest::SHA1_FOR_LEGACY_USE_ONLY);
+    ctx.update(key.as_bytes());
+    ctx.update(GUID.as_bytes());
+    let accept_key = encode(ctx.finish().as_ref());
 
     tokio::spawn(async move {
         match upgrade::on(&mut request).await {

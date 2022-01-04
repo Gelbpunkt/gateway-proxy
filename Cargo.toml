@@ -15,8 +15,8 @@ libc = { version = "0.2", default-features = false }
 metrics = { version = "0.17", default-features = false, features = ["std"] }
 metrics-exporter-prometheus = { version = "0.7", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = ["override"] }
+ring = { version = "0.16", default-features = false }
 serde = { version = "1", features = ["derive"] }
-sha-1 = "0.10"
 simd-json = { version = "0.4", default-features = false, features = [
     "serde_impl"
 ] }
