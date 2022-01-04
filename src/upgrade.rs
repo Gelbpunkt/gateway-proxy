@@ -25,7 +25,7 @@ pub async fn server_upgrade(
     let query = uri.query();
 
     // Track whether the client requested zlib encoding
-    let use_zlib = query.contains(&"compress=zlib-stream");
+    let use_zlib = query.map_or(false, |q| q.contains(&"compress=zlib-stream"));
 
     let mut response = Response::new(Body::empty());
 
