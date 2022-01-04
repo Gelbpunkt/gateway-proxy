@@ -45,8 +45,7 @@ twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch =
 twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = ["rustls-webpki-roots"] }
 twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
     "rustls-webpki-roots",
-    "simd-json",
-    "trust-dns"
+    "simd-json"
 ] }
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
 
