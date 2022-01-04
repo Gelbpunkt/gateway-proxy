@@ -15,21 +15,21 @@ use std::{sync::Arc, time::Duration};
 use crate::{
     deserializer::{EventTypeInfo, GatewayEventDeserializer, SequenceInfo},
     model::{JsonObject, Ready},
-    state::ShardStatus,
+    state::ShardState,
 };
 
 pub type BroadcastMessage = (String, Option<SequenceInfo>);
 
 pub async fn dispatch_events(
     mut events: Events,
-    shard_status: Arc<ShardStatus>,
+    shard_state: Arc<ShardState>,
     shard_id: u64,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
     ready_tx: watch::Sender<Option<JsonObject>>,
 ) {
     while let Some(event) = events.next().await {
-        shard_status.guilds.update(&event);
-        shard_status.voice.update(&event);
+        shard_state.guilds.update(&event);
+        shard_state.voice.update(&event);
 
         if let Event::ShardPayload(body) = event {
             let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
@@ -73,13 +73,13 @@ pub async fn dispatch_events(
             }
         } else if let Event::ShardReconnecting(_) = event {
             debug!("[Shard {}] Reconnecting", shard_id);
-            shard_status.voice.clear();
+            shard_state.voice.clear();
             let _res = ready_tx.send(None);
         }
     }
 }
 
-pub async fn shard_latency(shard_status: Arc<ShardStatus>) {
+pub async fn shard_latency(shard_status: Arc<ShardState>) {
     let mut interval = interval(Duration::from_secs(60));
 
     loop {

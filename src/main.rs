@@ -85,7 +85,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     );
 
     // Create all shards
-    let mut shards: state::Shards = Vec::with_capacity(shard_count as usize);
+    let mut shards = Vec::with_capacity(shard_count as usize);
 
     info!("Creating {} shards", shard_count);
 
@@ -124,7 +124,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
         let (ready_tx, ready_rx) = watch::channel(None);
 
-        let shard_status = Arc::new(state::ShardStatus {
+        let shard_status = Arc::new(state::ShardState {
             shard,
             events: broadcast_tx.clone(),
             ready: ready_rx,
@@ -151,7 +151,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         debug!("Created shard {} of {} total", shard_id, shard_count);
     }
 
-    let state = Arc::new(state::StateInner {
+    let state = Arc::new(state::InnerState {
         shards,
         shard_count,
     });

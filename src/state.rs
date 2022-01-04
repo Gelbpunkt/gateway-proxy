@@ -9,19 +9,27 @@ use crate::{
     model::JsonObject,
 };
 
-pub struct ShardStatus {
+/// State of a single shard.
+pub struct ShardState {
+    /// The [`Shard`] this state is for.
     pub shard: Shard,
+    /// Handle for broadcasting events for this shard.
     pub events: broadcast::Sender<BroadcastMessage>,
+    /// Receiver for READY payloads of this shard.
     pub ready: watch::Receiver<Option<JsonObject>>,
+    /// Cache for guilds on this shard.
     pub guilds: GuildCache,
+    /// Voice session cache for this shard.
     pub voice: VoiceCache,
 }
 
-pub type Shards = Vec<Arc<ShardStatus>>;
-
-pub struct StateInner {
-    pub shards: Shards,
+/// Global state for all shards managed by the proxy.
+pub struct InnerState {
+    /// State of all shards managed by the proxy.
+    pub shards: Vec<Arc<ShardState>>,
+    /// Total shard count.
     pub shard_count: u64,
 }
 
-pub type State = Arc<StateInner>;
+/// A reference to the [`StateInner`] of the proxy.
+pub type State = Arc<InnerState>;
