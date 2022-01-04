@@ -25,10 +25,10 @@ use std::{convert::Infallible, net::SocketAddr, pin::Pin, sync::Arc};
 
 use crate::{
     config::CONFIG,
-    deserializer::{GatewayEventDeserializer, SequenceInfo},
+    deserializer::{GatewayEvent, SequenceInfo},
     model::{Identify, VoiceStateUpdate},
     state::State,
-    upgrade::server_upgrade,
+    upgrade,
 };
 
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
@@ -208,7 +208,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
         let data = msg.into_data();
         let mut payload = unsafe { String::from_utf8_unchecked(data) };
 
-        let deserializer = match GatewayEventDeserializer::from_json(&payload) {
+        let deserializer = match GatewayEvent::from_json(&payload) {
             Some(deserializer) => deserializer,
             None => continue,
         };
@@ -326,7 +326,7 @@ fn handle_metrics(
     })
 }
 
-pub async fn run_server(
+pub async fn run(
     port: u16,
     state: State,
     metrics_handle: Arc<PrometheusHandle>,
@@ -347,7 +347,7 @@ pub async fn run_server(
                     handle_metrics(metrics_handle.clone())
                 } else {
                     // On anything else just provide the websocket server
-                    Box::pin(server_upgrade(addr, incoming, state.clone()))
+                    Box::pin(upgrade::server(addr, incoming, state.clone()))
                 }
             }))
         }

@@ -18,7 +18,7 @@
 use std::{ops::Range, str::FromStr};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GatewayEventDeserializer<'a> {
+pub struct GatewayEvent<'a> {
     event_type: Option<EventTypeInfo<'a>>,
     op: OpInfo,
     sequence: Option<SequenceInfo>,
@@ -33,7 +33,7 @@ pub struct EventTypeInfo<'a>(pub &'a str, pub Range<usize>);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SequenceInfo(pub u64, pub Range<usize>);
 
-impl<'a> GatewayEventDeserializer<'a> {
+impl<'a> GatewayEvent<'a> {
     /// Create a gateway event deserializer with some information found by
     /// scanning the JSON payload to deserialise.
     ///

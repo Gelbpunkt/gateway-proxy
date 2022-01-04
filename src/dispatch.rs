@@ -13,16 +13,16 @@ use twilight_gateway::{
 use std::{sync::Arc, time::Duration};
 
 use crate::{
-    deserializer::{EventTypeInfo, GatewayEventDeserializer, SequenceInfo},
+    deserializer::{EventTypeInfo, GatewayEvent, SequenceInfo},
     model::{JsonObject, Ready},
-    state::ShardState,
+    state::Shard,
 };
 
 pub type BroadcastMessage = (String, Option<SequenceInfo>);
 
-pub async fn dispatch_events(
+pub async fn events(
     mut events: Events,
-    shard_state: Arc<ShardState>,
+    shard_state: Arc<Shard>,
     shard_id: u64,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
     ready_tx: watch::Sender<Option<JsonObject>>,
@@ -34,7 +34,7 @@ pub async fn dispatch_events(
         if let Event::ShardPayload(body) = event {
             let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
             // The event is always valid
-            let deserializer = GatewayEventDeserializer::from_json(&payload).unwrap();
+            let deserializer = GatewayEvent::from_json(&payload).unwrap();
             let (op, sequence, event_type) = deserializer.into_parts();
 
             if let Some(EventTypeInfo(event_name, _)) = event_type {
@@ -79,13 +79,13 @@ pub async fn dispatch_events(
     }
 }
 
-pub async fn shard_latency(shard_status: Arc<ShardState>) {
+pub async fn shard_latency(shard_state: Arc<Shard>) {
     let mut interval = interval(Duration::from_secs(60));
 
     loop {
         interval.tick().await;
 
-        if let Ok(info) = shard_status.shard.info() {
+        if let Ok(info) = shard_state.shard.info() {
             // There is no way around this, sadly
             let connection_status = match info.stage() {
                 Stage::Connected => 4.0,

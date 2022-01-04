@@ -41,13 +41,13 @@ pub enum Event {
     VoiceStateUpdate(VoiceState),
 }
 
-pub struct VoiceCache(
+pub struct Voice(
     DashMap<Id<GuildMarker>, Vec<Event>>,
     Arc<InMemoryCache>,
     u64,
 );
 
-impl VoiceCache {
+impl Voice {
     pub fn new(cache: Arc<InMemoryCache>, shard_id: u64) -> Self {
         Self(DashMap::new(), cache, shard_id)
     }
@@ -129,9 +129,9 @@ impl VoiceCache {
     }
 }
 
-pub struct GuildCache(Arc<InMemoryCache>, u64);
+pub struct Guilds(Arc<InMemoryCache>, u64);
 
-impl GuildCache {
+impl Guilds {
     pub fn new(cache: Arc<InMemoryCache>, shard_id: u64) -> Self {
         Self(cache, shard_id)
     }

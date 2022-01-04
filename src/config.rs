@@ -30,11 +30,11 @@ pub struct Config {
     #[serde(default)]
     pub twilight_http_proxy: Option<String>,
     #[serde(default)]
-    pub cache: CacheConfig,
+    pub cache: Cache,
 }
 
 #[derive(Deserialize, Clone)]
-pub struct CacheConfig {
+pub struct Cache {
     pub channels: bool,
     pub presences: bool,
     pub emojis: bool,
@@ -47,7 +47,7 @@ pub struct CacheConfig {
     pub voice_states: bool,
 }
 
-impl Default for CacheConfig {
+impl Default for Cache {
     fn default() -> Self {
         Self {
             channels: true,
@@ -64,7 +64,7 @@ impl Default for CacheConfig {
     }
 }
 
-impl Into<EventTypeFlags> for CacheConfig {
+impl Into<EventTypeFlags> for Cache {
     fn into(self) -> EventTypeFlags {
         let mut flags = EventTypeFlags::SHARD_PAYLOAD
             | EventTypeFlags::GUILD_CREATE
@@ -117,7 +117,7 @@ impl Into<EventTypeFlags> for CacheConfig {
     }
 }
 
-impl Into<ResourceType> for CacheConfig {
+impl Into<ResourceType> for Cache {
     fn into(self) -> ResourceType {
         let mut resource_types = ResourceType::GUILD | ResourceType::USER_CURRENT;
 
@@ -181,12 +181,12 @@ fn default_backpressure() -> usize {
     100
 }
 
-pub enum ConfigError {
+pub enum Error {
     InvalidConfig(simd_json::Error),
     NotFound(String),
 }
 
-impl Display for ConfigError {
+impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Self::InvalidConfig(s) => s.fmt(f),
@@ -195,9 +195,9 @@ impl Display for ConfigError {
     }
 }
 
-pub fn load(path: &str) -> Result<Config, ConfigError> {
-    let mut content = read_to_string(path).map_err(|_| ConfigError::NotFound(path.to_string()))?;
-    let config = simd_json::from_str(&mut content).map_err(ConfigError::InvalidConfig)?;
+pub fn load(path: &str) -> Result<Config, Error> {
+    let mut content = read_to_string(path).map_err(|_| Error::NotFound(path.to_string()))?;
+    let config = simd_json::from_str(&mut content).map_err(Error::InvalidConfig)?;
 
     Ok(config)
 }

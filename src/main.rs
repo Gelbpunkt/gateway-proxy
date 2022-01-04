@@ -1,7 +1,6 @@
 #![feature(option_result_contains, once_cell)]
 #![deny(clippy::pedantic)]
 #![allow(
-    clippy::module_name_repetitions,
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::large_enum_variant,
@@ -23,10 +22,7 @@ use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresenceP
 
 use std::{env::set_var, error::Error, sync::Arc};
 
-use crate::{
-    cache::{GuildCache, VoiceCache},
-    config::CONFIG,
-};
+use crate::config::CONFIG;
 
 mod cache;
 mod config;
@@ -119,12 +115,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                 .resource_types(CONFIG.cache.clone().into())
                 .build(),
         );
-        let guild_cache = GuildCache::new(cache.clone(), shard_id);
-        let voice_cache = VoiceCache::new(cache, shard_id);
+        let guild_cache = cache::Guilds::new(cache.clone(), shard_id);
+        let voice_cache = cache::Voice::new(cache, shard_id);
 
         let (ready_tx, ready_rx) = watch::channel(None);
 
-        let shard_status = Arc::new(state::ShardState {
+        let shard_status = Arc::new(state::Shard {
             shard,
             events: broadcast_tx.clone(),
             ready: ready_rx,
@@ -135,7 +131,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         // Now pipe the events into the broadcast
         // and handle state updates for the guild cache
         // and set the ready event if received
-        tokio::spawn(dispatch::dispatch_events(
+        tokio::spawn(dispatch::events(
             events,
             shard_status.clone(),
             shard_id,
@@ -151,12 +147,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         debug!("Created shard {} of {} total", shard_id, shard_count);
     }
 
-    let state = Arc::new(state::InnerState {
+    let state = Arc::new(state::Inner {
         shards,
         shard_count,
     });
 
-    if let Err(e) = server::run_server(CONFIG.port, state, metrics_handle).await {
+    if let Err(e) = server::run(CONFIG.port, state, metrics_handle).await {
         error!("{}", e);
     };
 
