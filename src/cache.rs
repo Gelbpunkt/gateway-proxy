@@ -176,7 +176,7 @@ impl GuildCache {
                 reference
                     .iter()
                     .filter_map(|channel_id| {
-                        let channel = self.0.guild_channel(*channel_id).unwrap();
+                        let channel = self.0.guild_channel(*channel_id)?;
 
                         if matches!(
                             channel.value().resource(),
@@ -357,7 +357,7 @@ impl GuildCache {
                 reference
                     .iter()
                     .filter_map(|channel_id| {
-                        let channel = self.0.guild_channel(*channel_id).unwrap();
+                        let channel = self.0.guild_channel(*channel_id)?;
 
                         if matches!(
                             channel.value().resource(),
@@ -370,7 +370,7 @@ impl GuildCache {
                     })
                     .collect()
             })
-            .unwrap()
+            .unwrap_or_default()
     }
 
     pub fn get_guild_payloads<'a>(
