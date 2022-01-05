@@ -61,8 +61,19 @@ async fn forward_shard(
 
     debug!("[Shard {}] Starting to send events to client", shard_id);
 
-    // If there is no READY received for the shard yet, wait for it
-    if ready_rx.borrow_and_update().is_none() {
+    let ready_base_payload;
+
+    // Wait until we have a valid READY payload for this shard
+    loop {
+        {
+            let ready = ready_rx.borrow_and_update();
+
+            if let Some(payload) = &*ready {
+                ready_base_payload = payload.clone();
+                break;
+            }
+        }
+
         let _ = ready_rx.changed().await;
     }
 
@@ -70,7 +81,7 @@ async fn forward_shard(
         // Get a fake ready payload to send to the client
         let ready_payload = shard_status
             .guilds
-            .get_ready_payload(ready_rx.borrow().clone().unwrap(), &mut seq);
+            .get_ready_payload(ready_base_payload, &mut seq);
 
         if let Ok(serialized) = simd_json::to_string(&ready_payload) {
             debug!("[Shard {}] Sending newly created READY", shard_id);
