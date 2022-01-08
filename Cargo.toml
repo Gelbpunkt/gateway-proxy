@@ -15,6 +15,7 @@ libc = { version = "0.2", default-features = false }
 metrics = { version = "0.17", default-features = false, features = ["std"] }
 metrics-exporter-prometheus = { version = "0.7", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = ["override"] }
+parking_lot = "0.11"
 ring = { version = "0.16", default-features = false }
 serde = { version = "1", features = ["derive"] }
 simd-json = { version = "0.4", default-features = false, features = [

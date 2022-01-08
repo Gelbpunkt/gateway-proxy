@@ -75,9 +75,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.8.0"
+version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f1e260c3a9040a7c19a12468758f4c16f31a81a1fe087482be9570ec864bb6c"
+checksum = "a4a45a46ab1f2412e53d3a0ade76ffad2025804294569aae387231a0cd6e0899"
 
 [[package]]
 name = "byteorder"
@@ -105,9 +105,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cmake"
-version = "0.1.46"
+version = "0.1.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7b858541263efe664aead4a5209a4ae5c5d2811167d4ed4ee0944503f8d2089"
+checksum = "e8ad8cef104ac57b68b89df3208164d228503abbdce70f6880ffa3d970e7443a"
 dependencies = [
  "cc",
 ]
@@ -282,6 +282,7 @@ dependencies = [
  "metrics",
  "metrics-exporter-prometheus",
  "mimalloc",
+ "parking_lot",
  "ring",
  "serde",
  "simd-json",
@@ -319,9 +320,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.9"
+version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f072413d126e57991455e0a922b31e4c8ba7c2ffbebf6b78b4f8521397d65cd"
+checksum = "0c9de88456263e249e241fcd211d3954e2c9b0ef7ccfc235a444eb367cae3689"
 dependencies = [
  "bytes",
  "fnv",
@@ -449,9 +450,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
+checksum = "282a6247722caba404c065016bbfa522806e51714c34f5dfc3e4a3a46fcb4223"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -738,9 +739,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "ordered-float"
-version = "2.9.0"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8aa3d135650b150c29f0c3e385896f9d3ceb42d2d87b02f0d7a8cbd0fc7e19a6"
+checksum = "7940cf2ca942593318d07fcf2596cdca60a85c9e7fab408a5e21a4f9dcd40d87"
 dependencies = [
  "num-traits",
 ]
@@ -1106,9 +1107,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "syn"
-version = "1.0.84"
+version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecb2e6da8ee5eb9a61068762a32fa9619cc591ceb055b3687f4cd4051ec2e06b"
+checksum = "a684ac3dcd8913827e18cd09a68384ee66c1de24157e3c556c9ab16d85695fb7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1323,7 +1324,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "bitflags",
  "dashmap 5.0.0",
@@ -1334,7 +1335,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.8.2"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1357,7 +1358,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.8.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "tokio",
  "twilight-http",
@@ -1366,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1384,7 +1385,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.8.2"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "futures-util",
  "http",
@@ -1394,7 +1395,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "bitflags",
  "serde",
@@ -1407,7 +1408,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.9.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#065ef787d332c67610a2fe4d73e985cd00f62007"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
 dependencies = [
  "twilight-model",
 ]

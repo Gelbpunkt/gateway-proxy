@@ -51,8 +51,6 @@ async fn forward_shard(
     // Get a handle to the shard
     let shard_status = state.shards[shard_id as usize].clone();
 
-    let mut ready_rx = shard_status.ready.clone();
-
     // Fake sequence number for the client. We update packets to overwrite it
     let mut seq: usize = 0;
 
@@ -61,27 +59,14 @@ async fn forward_shard(
 
     debug!("[Shard {}] Starting to send events to client", shard_id);
 
-    let ready_base_payload;
-
     // Wait until we have a valid READY payload for this shard
-    loop {
-        {
-            let ready = ready_rx.borrow_and_update();
-
-            if let Some(payload) = &*ready {
-                ready_base_payload = payload.clone();
-                break;
-            }
-        }
-
-        let _ = ready_rx.changed().await;
-    }
+    let ready_payload = shard_status.ready.wait_until_ready().await;
 
     {
         // Get a fake ready payload to send to the client
         let ready_payload = shard_status
             .guilds
-            .get_ready_payload(ready_base_payload, &mut seq);
+            .get_ready_payload(ready_payload, &mut seq);
 
         if let Ok(serialized) = simd_json::to_string(&ready_payload) {
             debug!("[Shard {}] Sending newly created READY", shard_id);
@@ -134,10 +119,10 @@ async fn forward_shard(
                     }
                 }
             },
-            _ = ready_rx.changed() => {
-                if ready_rx.borrow().is_none() {
+            _ = shard_status.ready.wait_changed() => {
+                if !shard_status.ready.is_ready() {
                     debug!("[Shard {}] Temporary disconnect, stopped forwarding events", shard_id);
-                    let _ = ready_rx.changed().await;
+                    shard_status.ready.wait_changed().await;
                     debug!("[Shard {}] Reconnected, starting to forward events again", shard_id);
                 }
             }

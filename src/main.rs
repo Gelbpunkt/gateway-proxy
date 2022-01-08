@@ -11,7 +11,7 @@
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
-use tokio::sync::{broadcast, watch};
+use tokio::sync::broadcast;
 use tracing::{debug, error, info};
 use tracing_subscriber::EnvFilter;
 use twilight_cache_inmemory::InMemoryCache;
@@ -118,12 +118,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         let guild_cache = cache::Guilds::new(cache.clone(), shard_id);
         let voice_cache = cache::Voice::new(cache, shard_id);
 
-        let (ready_tx, ready_rx) = watch::channel(None);
+        let ready = state::Ready::new();
 
         let shard_status = Arc::new(state::Shard {
             shard,
             events: broadcast_tx.clone(),
-            ready: ready_rx,
+            ready,
             guilds: guild_cache,
             voice: voice_cache,
         });
@@ -136,7 +136,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             shard_status.clone(),
             shard_id,
             broadcast_tx,
-            ready_tx,
         ));
 
         // Track the shard latency in metrics

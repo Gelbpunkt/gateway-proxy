@@ -1,9 +1,51 @@
-use tokio::sync::{broadcast, watch};
+use parking_lot::RwLock;
+use tokio::sync::{broadcast, Notify};
 use twilight_gateway::Shard as TwilightShard;
 
 use std::sync::Arc;
 
 use crate::{cache, dispatch::BroadcastMessage, model::JsonObject};
+
+/// Manager for the READY state of a shard.
+pub struct Ready {
+    inner: RwLock<Option<JsonObject>>,
+    changed: Notify,
+}
+
+impl Ready {
+    pub fn new() -> Self {
+        Self {
+            inner: RwLock::new(None),
+            changed: Notify::new(),
+        }
+    }
+
+    pub async fn wait_changed(&self) {
+        self.changed.notified().await;
+    }
+
+    pub fn is_ready(&self) -> bool {
+        self.inner.read().is_some()
+    }
+
+    pub fn set_ready(&self, payload: JsonObject) {
+        *self.inner.write() = Some(payload);
+        self.changed.notify_waiters();
+    }
+
+    pub fn set_not_ready(&self) {
+        *self.inner.write() = None;
+        self.changed.notify_waiters();
+    }
+
+    pub async fn wait_until_ready(&self) -> JsonObject {
+        while !self.is_ready() {
+            self.wait_changed().await;
+        }
+
+        self.inner.read().clone().unwrap()
+    }
+}
 
 /// State of a single shard.
 pub struct Shard {
@@ -11,8 +53,8 @@ pub struct Shard {
     pub shard: TwilightShard,
     /// Handle for broadcasting events for this shard.
     pub events: broadcast::Sender<BroadcastMessage>,
-    /// Receiver for READY payloads of this shard.
-    pub ready: watch::Receiver<Option<JsonObject>>,
+    /// READY state manager for this shard.
+    pub ready: Ready,
     /// Cache for guilds on this shard.
     pub guilds: cache::Guilds,
     /// Voice session cache for this shard.
