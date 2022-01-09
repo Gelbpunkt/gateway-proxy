@@ -23,6 +23,10 @@ pub async fn events(
     shard_id: u64,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
 ) {
+    // This method only wants to relay events while the shard is in a READY state
+    // Therefore, we only put events in the queue while we are connected and READY
+    let mut is_ready = false;
+
     while let Some(event) = events.next().await {
         shard_state.guilds.update(&event);
 
@@ -49,6 +53,7 @@ pub async fn events(
                     // We don't care if it was already set
                     // since this data is timeless
                     shard_state.ready.set_ready(ready.d);
+                    is_ready = true;
 
                     continue;
                 } else if event_name == "RESUMED" {
@@ -64,11 +69,15 @@ pub async fn events(
                     shard_id,
                     payload
                 );
-                let _res = broadcast_tx.send((payload, sequence));
+
+                if is_ready {
+                    let _res = broadcast_tx.send((payload, sequence));
+                }
             }
         } else if let Event::ShardReconnecting(_) = event {
             debug!("[Shard {}] Reconnecting", shard_id);
             shard_state.ready.set_not_ready();
+            is_ready = false;
         }
     }
 }

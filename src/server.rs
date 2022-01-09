@@ -96,13 +96,6 @@ async fn forward_shard(
             Some(msg) = shard_send_rx.recv() => {
                 let _res = shard_status.shard.send(msg).await;
             },
-            _ = shard_status.ready.wait_changed() => {
-                if !shard_status.ready.is_ready() {
-                    debug!("[Shard {}] Temporary disconnect, stopped forwarding events", shard_id);
-                    shard_status.ready.wait_changed().await;
-                    debug!("[Shard {}] Reconnected, starting to forward events again", shard_id);
-                }
-            }
         };
     }
 }
