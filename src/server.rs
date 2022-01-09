@@ -1,4 +1,4 @@
-use flate2::{Compress, Compression, FlushCompress};
+use flate2::{Compress, Compression, FlushCompress, Status};
 use futures_util::{Future, SinkExt, StreamExt};
 use hyper::{
     server::conn::AddrStream,
@@ -33,6 +33,34 @@ use crate::{
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
 const INVALID_SESSION: &str = r#"{"t":null,"s":null,"op":9,"d":false}"#;
+
+const TRAILER: [u8; 4] = [0x00, 0x00, 0xff, 0xff];
+
+fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) {
+    let before_in = compressor.total_in() as usize;
+    while (compressor.total_in() as usize) - before_in < input.len() {
+        let offset = (compressor.total_in() as usize) - before_in;
+        match compressor
+            .compress_vec(&input[offset..], output, FlushCompress::None)
+            .unwrap()
+        {
+            Status::Ok => continue,
+            Status::BufError => output.reserve(4096),
+            Status::StreamEnd => break,
+        }
+    }
+
+    while !output.ends_with(&TRAILER) {
+        output.reserve(5);
+        match compressor
+            .compress_vec(&[], output, FlushCompress::Sync)
+            .unwrap()
+        {
+            Status::Ok | Status::BufError => continue,
+            Status::StreamEnd => break,
+        }
+    }
+}
 
 async fn forward_shard(
     mut shard_id_rx: UnboundedReceiver<u64>,
@@ -112,6 +140,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     let mut compress_tx = Some(compress_tx);
 
     let mut compress = Compress::new(Compression::fast(), true);
+    let mut compression_buffer = Vec::with_capacity(32 * 1024);
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
@@ -120,12 +149,10 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     // Because we wait for IDENTIFY later, HELLO needs to be sent now
     // and optionally compressed!
     if use_zlib {
-        let mut compressed = Vec::with_capacity(HELLO.len());
-        compress
-            .compress_vec(HELLO.as_bytes(), &mut compressed, FlushCompress::Sync)
-            .unwrap();
+        compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
 
-        sink.send(Message::Binary(compressed)).await?;
+        sink.send(Message::Binary(compression_buffer.clone()))
+            .await?;
     } else {
         sink.send(Message::Text(HELLO.to_string())).await?;
     }
@@ -142,12 +169,11 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             trace!("[{}] Sending {:?}", addr, msg);
 
             if use_zlib {
-                let mut compressed = Vec::with_capacity(msg.len());
-                compress
-                    .compress_vec(&msg.into_data(), &mut compressed, FlushCompress::Sync)
-                    .unwrap();
+                compression_buffer.clear();
+                compress_full(&mut compress, &mut compression_buffer, &msg.into_data());
 
-                sink.send(Message::Binary(compressed)).await?;
+                sink.send(Message::Binary(compression_buffer.clone()))
+                    .await?;
             } else {
                 sink.send(msg).await?;
             }
