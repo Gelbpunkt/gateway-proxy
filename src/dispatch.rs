@@ -57,6 +57,8 @@ pub async fn events(
 
                     continue;
                 } else if event_name == "RESUMED" {
+                    is_ready = true;
+
                     continue;
                 }
             }
