@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 base64 = "0.13"
-dashmap = "5.0"
 flate2 = { version = "1.0", default-features = false, features = ["zlib-ng-compat"] }
 futures-util = { version = "0.3", default-features = false }
 halfbrown = "0.1"

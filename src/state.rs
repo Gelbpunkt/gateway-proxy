@@ -57,8 +57,6 @@ pub struct Shard {
     pub ready: Ready,
     /// Cache for guilds on this shard.
     pub guilds: cache::Guilds,
-    /// Voice session cache for this shard.
-    pub voice: cache::Voice,
 }
 
 /// Global state for all shards managed by the proxy.

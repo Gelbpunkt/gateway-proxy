@@ -116,7 +116,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                 .build(),
         );
         let guild_cache = cache::Guilds::new(cache.clone(), shard_id);
-        let voice_cache = cache::Voice::new(cache, shard_id);
 
         let ready = state::Ready::new();
 
@@ -125,7 +124,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             events: broadcast_tx.clone(),
             ready,
             guilds: guild_cache,
-            voice: voice_cache,
         });
 
         // Now pipe the events into the broadcast

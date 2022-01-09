@@ -1,21 +1,17 @@
-use dashmap::DashMap;
 use halfbrown::hashmap;
 use serde::Serialize;
 use simd_json::OwnedValue;
 use twilight_cache_inmemory::{InMemoryCache, UpdateCache};
-use twilight_gateway::{Event as GatewayEvent, Intents};
+use twilight_gateway::Intents;
 use twilight_model::{
     channel::{message::Sticker, GuildChannel, StageInstance},
     gateway::{
-        payload::incoming::{GuildCreate, GuildDelete, VoiceServerUpdate},
+        payload::incoming::{GuildCreate, GuildDelete},
         presence::{Presence, UserOrId},
         OpCode,
     },
     guild::{Emoji, Guild, Member, Role},
-    id::{
-        marker::{ChannelMarker, GuildMarker},
-        Id,
-    },
+    id::{marker::GuildMarker, Id},
     voice::VoiceState,
 };
 
@@ -37,96 +33,6 @@ pub enum Event {
     Ready(JsonObject),
     GuildCreate(GuildCreate),
     GuildDelete(GuildDelete),
-    VoiceServerUpdate(VoiceServerUpdate),
-    VoiceStateUpdate(VoiceState),
-}
-
-pub struct Voice(
-    DashMap<Id<GuildMarker>, Vec<Event>>,
-    Arc<InMemoryCache>,
-    u64,
-);
-
-impl Voice {
-    pub fn new(cache: Arc<InMemoryCache>, shard_id: u64) -> Self {
-        Self(DashMap::new(), cache, shard_id)
-    }
-
-    pub fn is_in_channel(&self, guild_id: Id<GuildMarker>, channel_id: Id<ChannelMarker>) -> bool {
-        if let Some(payloads) = self.0.get(&guild_id) {
-            for payload in payloads.iter() {
-                if let Event::VoiceStateUpdate(state) = payload {
-                    return state.channel_id.contains(&channel_id);
-                }
-            }
-        }
-
-        false
-    }
-
-    pub fn get_payloads(&self, guild_id: Id<GuildMarker>, sequence: &mut usize) -> Vec<Payload> {
-        if let Some(events) = self.0.get(&guild_id) {
-            events
-                .iter()
-                .map(|event| {
-                    *sequence += 1;
-
-                    Payload {
-                        d: event.clone(),
-                        op: OpCode::Event,
-                        t: if let Event::VoiceServerUpdate(_) = event {
-                            String::from("VOICE_SERVER_UPDATE")
-                        } else {
-                            String::from("VOICE_STATE_UPDATE")
-                        },
-                        s: *sequence,
-                    }
-                })
-                .collect()
-        } else {
-            Vec::new()
-        }
-    }
-
-    pub fn clear(&self) {
-        self.0.clear();
-    }
-
-    pub fn disconnect(&self, guild_id: Id<GuildMarker>) {
-        self.0.remove(&guild_id);
-    }
-
-    pub fn update(&self, value: &GatewayEvent) {
-        match value {
-            GatewayEvent::VoiceServerUpdate(voice_server_update) => {
-                if let Some(guild_id) = voice_server_update.guild_id {
-                    // This is always the second event
-                    if let Some(mut payloads) = self.0.get_mut(&guild_id) {
-                        payloads.push(Event::VoiceServerUpdate(voice_server_update.clone()));
-                    }
-                }
-            }
-            GatewayEvent::VoiceStateUpdate(voice_state_update) => {
-                if let Some(me) = self.1.current_user() {
-                    if me.id == voice_state_update.0.user_id {
-                        if let Some(guild_id) = voice_state_update.0.guild_id {
-                            // This is always the first event
-                            if voice_state_update.0.channel_id.is_some() {
-                                self.0.insert(
-                                    guild_id,
-                                    vec![Event::VoiceStateUpdate(voice_state_update.0.clone())],
-                                );
-                            } else {
-                                // Client disconnected
-                                self.0.remove(&guild_id);
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
 }
 
 pub struct Guilds(Arc<InMemoryCache>, u64);
