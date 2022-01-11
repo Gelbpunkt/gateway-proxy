@@ -49,6 +49,8 @@ impl Ready {
 
 /// State of a single shard.
 pub struct Shard {
+    /// ID of this shard.
+    pub id: u64,
     /// The [`TwilightShard`] this state is for.
     pub shard: TwilightShard,
     /// Handle for broadcasting events for this shard.

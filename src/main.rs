@@ -117,6 +117,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         let ready = state::Ready::new();
 
         let shard_status = Arc::new(state::Shard {
+            id: shard_id,
             shard,
             events: broadcast_tx.clone(),
             ready,

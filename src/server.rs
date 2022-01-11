@@ -9,7 +9,7 @@ use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{
-        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+        mpsc::{unbounded_channel, UnboundedSender},
         oneshot,
     },
 };
@@ -26,7 +26,7 @@ use crate::{
     config::CONFIG,
     deserializer::{GatewayEvent, SequenceInfo},
     model::Identify,
-    state::State,
+    state::{Shard, State},
     upgrade,
 };
 
@@ -62,23 +62,17 @@ fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) 
     }
 }
 
-async fn forward_shard(
-    mut shard_id_rx: UnboundedReceiver<u64>,
-    stream_writer: UnboundedSender<Message>,
-    state: State,
-) {
-    // Wait for the client's IDENTIFY to finish and acquire the shard ID
-    let shard_id = shard_id_rx.recv().await.unwrap();
-    // Get a handle to the shard
-    let shard_status = state.shards[shard_id as usize].clone();
-
+async fn forward_shard(shard_status: Arc<Shard>, stream_writer: UnboundedSender<Message>) {
     // Fake sequence number for the client. We update packets to overwrite it
     let mut seq: usize = 0;
 
     // Subscribe to events for this shard
     let mut event_receiver = shard_status.events.subscribe();
 
-    debug!("[Shard {}] Starting to send events to client", shard_id);
+    debug!(
+        "[Shard {}] Starting to send events to client",
+        shard_status.id
+    );
 
     // Wait until we have a valid READY payload for this shard
     let ready_payload = shard_status.ready.wait_until_ready().await;
@@ -90,7 +84,7 @@ async fn forward_shard(
             .get_ready_payload(ready_payload, &mut seq);
 
         if let Ok(serialized) = simd_json::to_string(&ready_payload) {
-            debug!("[Shard {}] Sending newly created READY", shard_id);
+            debug!("[Shard {}] Sending newly created READY", shard_status.id);
             let _res = stream_writer.send(Message::Text(serialized));
         };
 
@@ -99,7 +93,7 @@ async fn forward_shard(
             if let Ok(serialized) = simd_json::to_string(&payload) {
                 trace!(
                     "[Shard {}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
-                    shard_id
+                    shard_status.id
                 );
                 let _res = stream_writer.send(Message::Text(serialized));
             };
@@ -175,14 +169,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
         Ok::<(), Error>(())
     });
 
-    // Set up a task that will dump all the messages from the shard to the client
-    let (shard_id_tx, shard_id_rx) = unbounded_channel();
-
-    let shard_forward_task = tokio::spawn(forward_shard(
-        shard_id_rx,
-        stream_writer.clone(),
-        state.clone(),
-    ));
+    let mut shard_forward_task = None;
 
     while let Some(Ok(msg)) = stream.next().await {
         let data = msg.into_data();
@@ -235,13 +222,15 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 trace!("[{}] Shard ID is {:?}", addr, shard_id);
 
                 // The client is connected to this shard, so prepare for sending commands to it
-                shard_status = Some(state.shards[shard_id as usize].clone());
+                let shard = state.shards[shard_id as usize].clone();
+                shard_status = Some(shard.clone());
 
                 if let Some(sender) = compress_tx.take() {
+                    shard_forward_task =
+                        Some(tokio::spawn(forward_shard(shard, stream_writer.clone())));
+
                     let _res = sender.send(identify.d.compress);
                 }
-
-                let _res = shard_id_tx.send(shard_id);
             }
             6 => {
                 debug!("[{}] Client is resuming", addr);
@@ -270,7 +259,10 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     debug!("[{}] Client disconnected", addr);
 
     sink_task.abort();
-    shard_forward_task.abort();
+
+    if let Some(shard_forward_task) = shard_forward_task {
+        shard_forward_task.abort();
+    }
 
     Ok(())
 }
