@@ -45,11 +45,7 @@ unsafe fn set_os_handlers() {
     signal(SIGTERM, handler as extern "C" fn(_) as sighandler_t);
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-    // Exit on SIGINT/SIGTERM, used in Docker
-    unsafe { set_os_handlers() };
-
+async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     set_var("RUST_LOG", CONFIG.log_level.clone());
 
     tracing_subscriber::fmt()
@@ -154,4 +150,14 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     };
 
     Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+    unsafe { set_os_handlers() };
+
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(run())
 }

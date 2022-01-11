@@ -65,7 +65,6 @@ fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) 
 async fn forward_shard(
     mut shard_id_rx: UnboundedReceiver<u64>,
     stream_writer: UnboundedSender<Message>,
-    mut shard_send_rx: UnboundedReceiver<TwilightMessage>,
     state: State,
 ) {
     // Wait for the client's IDENTIFY to finish and acquire the shard ID
@@ -107,24 +106,14 @@ async fn forward_shard(
         }
     }
 
-    loop {
-        tokio::select! {
-            Ok(event) = event_receiver.recv() => {
-                // A payload has arrived to be sent to the client
-                let (mut payload, sequence) = event;
+    while let Ok((mut payload, sequence)) = event_receiver.recv().await {
+        // Overwrite the sequence number
+        if let Some(SequenceInfo(_, sequence_range)) = sequence {
+            seq += 1;
+            payload.replace_range(sequence_range, &seq.to_string());
+        }
 
-                // Overwrite the sequence number
-                if let Some(SequenceInfo(_, sequence_range)) = sequence {
-                    seq += 1;
-                    payload.replace_range(sequence_range, &seq.to_string());
-                }
-
-                let _res = stream_writer.send(Message::Text(payload));
-            },
-            Some(msg) = shard_send_rx.recv() => {
-                let _res = shard_status.shard.send(msg).await;
-            },
-        };
+        let _res = stream_writer.send(Message::Text(payload));
     }
 }
 
@@ -139,15 +128,19 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     let (compress_tx, compress_rx) = oneshot::channel();
     let mut compress_tx = Some(compress_tx);
 
+    // Initialize a zlib encoder with similar settings to Discord's
     let mut compress = Compress::new(Compression::fast(), true);
     let mut compression_buffer = Vec::with_capacity(32 * 1024);
+
+    // We need to know which shard this client is connected to in order to send messages to it
+    let mut shard_status = None;
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
     let (mut sink, mut stream) = stream.split();
 
     // Because we wait for IDENTIFY later, HELLO needs to be sent now
-    // and optionally compressed!
+    // and optionally compressed
     if use_zlib {
         compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
 
@@ -184,12 +177,10 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
     // Set up a task that will dump all the messages from the shard to the client
     let (shard_id_tx, shard_id_rx) = unbounded_channel();
-    let (shard_send_tx, shard_send_rx) = unbounded_channel();
 
     let shard_forward_task = tokio::spawn(forward_shard(
         shard_id_rx,
         stream_writer.clone(),
-        shard_send_rx,
         state.clone(),
     ));
 
@@ -243,6 +234,9 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
                 trace!("[{}] Shard ID is {:?}", addr, shard_id);
 
+                // The client is connected to this shard, so prepare for sending commands to it
+                shard_status = Some(state.shards[shard_id as usize].clone());
+
                 if let Some(sender) = compress_tx.take() {
                     let _res = sender.send(identify.d.compress);
                 }
@@ -257,8 +251,18 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
             }
             _ => {
-                trace!("[{}] Sending {:?} to Discord directly", addr, payload);
-                let _res = shard_send_tx.send(TwilightMessage::Text(payload));
+                if let Some(shard_status) = &shard_status {
+                    trace!("[{}] Sending {:?} to Discord directly", addr, payload);
+                    let _res = shard_status
+                        .shard
+                        .send(TwilightMessage::Text(payload))
+                        .await;
+                } else {
+                    warn!(
+                        "[{}] Client attempted to send payload before IDENTIFY",
+                        addr
+                    );
+                }
             }
         }
     }

@@ -23,7 +23,6 @@ simd-json = { version = "0.4", default-features = false, features = [
 # Better match twilight-gateway here
 tokio-tungstenite = { version = "0.16", default-features = false }
 tokio = { version = "1", default-features = false, features = [
-    "macros",
     "parking_lot",
     "rt-multi-thread"
 ] }
