@@ -104,10 +104,10 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|user_id| {
-                        let presence = self.0.presence(guild_id, *user_id).unwrap();
+                    .filter_map(|user_id| {
+                        let presence = self.0.presence(guild_id, *user_id)?;
 
-                        Presence {
+                        Some(Presence {
                             activities: presence.activities().to_vec(),
                             client_status: presence.client_status().clone(),
                             guild_id: presence.guild_id(),
@@ -115,7 +115,7 @@ impl Guilds {
                             user: UserOrId::UserId {
                                 id: presence.user_id(),
                             },
-                        }
+                        })
                     })
                     .collect()
             })
@@ -128,10 +128,10 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|emoji_id| {
-                        let emoji = self.0.emoji(*emoji_id).unwrap();
+                    .filter_map(|emoji_id| {
+                        let emoji = self.0.emoji(*emoji_id)?;
 
-                        Emoji {
+                        Some(Emoji {
                             animated: emoji.animated(),
                             available: emoji.available(),
                             id: emoji.id(),
@@ -142,7 +142,7 @@ impl Guilds {
                             user: emoji
                                 .user_id()
                                 .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
-                        }
+                        })
                     })
                     .collect()
             })
@@ -155,10 +155,10 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|user_id| {
-                        let member = self.0.member(guild_id, *user_id).unwrap();
+                    .filter_map(|user_id| {
+                        let member = self.0.member(guild_id, *user_id)?;
 
-                        Member {
+                        Some(Member {
                             avatar: member.avatar(),
                             communication_disabled_until: member.communication_disabled_until(),
                             deaf: member.deaf().unwrap_or_default(),
@@ -169,8 +169,8 @@ impl Guilds {
                             pending: member.pending(),
                             premium_since: member.premium_since(),
                             roles: member.roles().to_vec(),
-                            user: self.0.user(member.user_id()).unwrap().value().clone(), // FIX?
-                        }
+                            user: self.0.user(member.user_id())?.value().clone(), // FIX?
+                        })
                     })
                     .collect()
             })
@@ -183,7 +183,7 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|role_id| self.0.role(*role_id).unwrap().value().resource().clone())
+                    .filter_map(|role_id| Some(self.0.role(*role_id)?.value().resource().clone()))
                     .collect()
             })
             .unwrap_or_default()
@@ -195,13 +195,8 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|stage_id| {
-                        self.0
-                            .stage_instance(*stage_id)
-                            .unwrap()
-                            .value()
-                            .resource()
-                            .clone()
+                    .filter_map(|stage_id| {
+                        Some(self.0.stage_instance(*stage_id)?.value().resource().clone())
                     })
                     .collect()
             })
@@ -214,10 +209,10 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|sticker_id| {
-                        let sticker = self.0.sticker(*sticker_id).unwrap();
+                    .filter_map(|sticker_id| {
+                        let sticker = self.0.sticker(*sticker_id)?;
 
-                        Sticker {
+                        Some(Sticker {
                             available: sticker.available(),
                             description: Some(sticker.description().to_string()),
                             format_type: sticker.format_type(),
@@ -231,7 +226,7 @@ impl Guilds {
                             user: sticker
                                 .user_id()
                                 .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
-                        }
+                        })
                     })
                     .collect()
             })
@@ -244,12 +239,8 @@ impl Guilds {
             .map(|reference| {
                 reference
                     .iter()
-                    .map(|user_id| {
-                        self.0
-                            .voice_state(*user_id, guild_id)
-                            .unwrap()
-                            .value()
-                            .clone()
+                    .filter_map(|user_id| {
+                        Some(self.0.voice_state(*user_id, guild_id)?.value().clone())
                     })
                     .collect()
             })
