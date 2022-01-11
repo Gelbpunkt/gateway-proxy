@@ -164,17 +164,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "5.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b799062aaf67eb976af3bdca031ee6f846d2f0a5710ddbb0d2efee33f3cc4760"
-dependencies = [
- "cfg-if",
- "num_cpus",
- "parking_lot",
-]
-
-[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -634,7 +623,7 @@ dependencies = [
  "atomic-shim",
  "crossbeam-epoch",
  "crossbeam-utils",
- "dashmap 4.0.2",
+ "dashmap",
  "hashbrown",
  "indexmap",
  "metrics",
@@ -1322,19 +1311,19 @@ dependencies = [
 
 [[package]]
 name = "twilight-cache-inmemory"
-version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+version = "0.8.4"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "bitflags",
- "dashmap 5.0.0",
+ "dashmap",
  "serde",
  "twilight-model",
 ]
 
 [[package]]
 name = "twilight-gateway"
-version = "0.8.2"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+version = "0.8.3"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1357,7 +1346,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.8.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "tokio",
  "twilight-http",
@@ -1365,8 +1354,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-http"
-version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+version = "0.8.4"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1383,8 +1372,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-http-ratelimiting"
-version = "0.8.2"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+version = "0.8.3"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "futures-util",
  "http",
@@ -1393,8 +1382,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-model"
-version = "0.8.3"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+version = "0.8.4"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "bitflags",
  "serde",
@@ -1407,7 +1396,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.9.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#e418862c3cbe1b49d6e6f825846ecb6eb58d81fe"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom#bfb8e13f19e071d3ef4989c8822e5b68f1801e49"
 dependencies = [
  "twilight-model",
 ]
