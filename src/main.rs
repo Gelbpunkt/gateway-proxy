@@ -13,14 +13,14 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
 use tokio::sync::broadcast;
 use tracing::{debug, error, info};
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Shard;
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
-use std::{env::set_var, error::Error, sync::Arc};
+use std::{error::Error, str::FromStr, sync::Arc};
 
 use crate::config::CONFIG;
 
@@ -46,14 +46,15 @@ unsafe fn set_os_handlers() {
 }
 
 async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
-    set_var("RUST_LOG", CONFIG.log_level.clone());
-
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+    let level_filter = LevelFilter::from_str(&CONFIG.log_level).unwrap_or(LevelFilter::INFO);
+    let fmt_layer = tracing_subscriber::fmt::layer();
+    tracing_subscriber::registry()
+        .with(fmt_layer)
+        .with(level_filter)
         .init();
 
     // Set up metrics collection
-    let recorder = PrometheusBuilder::new().build();
+    let recorder = PrometheusBuilder::new().build_recorder();
     let metrics_handle = Arc::new(recorder.handle());
     metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
 

@@ -11,8 +11,8 @@ futures-util = { version = "0.3", default-features = false }
 halfbrown = "0.1"
 hyper = { version = "0.14", default-features = false, features = ["server", "http1", "http2"] }
 libc = { version = "0.2", default-features = false }
-metrics = { version = "0.17", default-features = false, features = ["std"] }
-metrics-exporter-prometheus = { version = "0.7", default-features = false }
+metrics = { git = "https://github.com/metrics-rs/metrics", default-features = false }
+metrics-exporter-prometheus = { git = "https://github.com/metrics-rs/metrics", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = ["override"] }
 parking_lot = "0.11"
 ring = { version = "0.16", default-features = false }
@@ -29,7 +29,6 @@ tokio = { version = "1", default-features = false, features = [
 tracing = { version = "0.1", default-features = false, features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = [
     "ansi",
-    "env-filter",
     "fmt",
     "parking_lot",
     "std"
