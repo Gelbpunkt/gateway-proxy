@@ -28,8 +28,6 @@ pub async fn events(
     let mut is_ready = false;
 
     while let Some(event) = events.next().await {
-        shard_state.guilds.update(&event);
-
         if let Event::ShardPayload(body) = event {
             let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
             // The event is always valid
@@ -80,6 +78,8 @@ pub async fn events(
             debug!("[Shard {}] Reconnecting", shard_id);
             shard_state.ready.set_not_ready();
             is_ready = false;
+        } else {
+            shard_state.guilds.update(event);
         }
     }
 }

@@ -42,7 +42,7 @@ impl Guilds {
         Self(cache, shard_id)
     }
 
-    pub fn update(&self, value: &impl UpdateCache) {
+    pub fn update(&self, value: impl UpdateCache) {
         self.0.update(value);
     }
 
