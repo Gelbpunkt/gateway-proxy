@@ -25,7 +25,7 @@ use std::{convert::Infallible, net::SocketAddr, pin::Pin, sync::Arc};
 use crate::{
     config::CONFIG,
     deserializer::{GatewayEvent, SequenceInfo},
-    model::Identify,
+    model::{Identify, Resume},
     state::{Shard, State},
     upgrade,
 };
@@ -33,6 +33,7 @@ use crate::{
 const HELLO: &str = r#"{"t":null,"s":null,"op":10,"d":{"heartbeat_interval":41250}}"#;
 const HEARTBEAT_ACK: &str = r#"{"t":null,"s":null,"op":11,"d":null}"#;
 const INVALID_SESSION: &str = r#"{"t":null,"s":null,"op":9,"d":false}"#;
+const RESUMED: &str = r#"{"t":"RESUMED","s":null,"op":0,"d":{}}"#;
 
 const TRAILER: [u8; 4] = [0x00, 0x00, 0xff, 0xff];
 
@@ -62,10 +63,12 @@ fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) 
     }
 }
 
-async fn forward_shard(shard_status: Arc<Shard>, stream_writer: UnboundedSender<Message>) {
-    // Fake sequence number for the client. We update packets to overwrite it
-    let mut seq: usize = 0;
-
+async fn forward_shard(
+    shard_status: Arc<Shard>,
+    stream_writer: UnboundedSender<Message>,
+    send_guilds: bool,
+    mut seq: usize,
+) {
     // Subscribe to events for this shard
     let mut event_receiver = shard_status.events.subscribe();
 
@@ -77,7 +80,7 @@ async fn forward_shard(shard_status: Arc<Shard>, stream_writer: UnboundedSender<
     // Wait until we have a valid READY payload for this shard
     let ready_payload = shard_status.ready.wait_until_ready().await;
 
-    {
+    if send_guilds {
         // Get a fake ready payload to send to the client
         let ready_payload = shard_status
             .guilds
@@ -98,6 +101,8 @@ async fn forward_shard(shard_status: Arc<Shard>, stream_writer: UnboundedSender<
                 let _res = stream_writer.send(Message::Text(serialized));
             };
         }
+    } else {
+        let _res = stream_writer.send(Message::Text(RESUMED.to_string()));
     }
 
     while let Ok((mut payload, sequence)) = event_receiver.recv().await {
@@ -226,18 +231,60 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 shard_status = Some(shard.clone());
 
                 if let Some(sender) = compress_tx.take() {
-                    shard_forward_task =
-                        Some(tokio::spawn(forward_shard(shard, stream_writer.clone())));
+                    shard_forward_task = Some(tokio::spawn(forward_shard(
+                        shard,
+                        stream_writer.clone(),
+                        true,
+                        0,
+                    )));
 
                     let _res = sender.send(identify.d.compress);
                 }
             }
             6 => {
                 debug!("[{}] Client is resuming", addr);
-                // TODO: Keep track of session IDs and choose one that we have active
-                // This would be unnecessary if people forked their clients though
-                // For now, send an invalid session so they use identify instead
-                let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
+
+                let resume: Resume = match simd_json::from_str(&mut payload) {
+                    Ok(resume) => resume,
+                    Err(e) => {
+                        warn!("[{}] Invalid resume payload: {:?}", addr, e);
+                        continue;
+                    }
+                };
+
+                if resume.d.token != CONFIG.token {
+                    warn!("[{}] Token from client mismatched, disconnecting", addr);
+                    break;
+                }
+
+                // Find the shard that has the matching session ID
+                if let Some(shard) = state.shards.iter().find(|shard_status| {
+                    if let Ok(info) = shard_status.shard.info() {
+                        info.session_id().contains(&resume.d.session_id)
+                    } else {
+                        false
+                    }
+                }) {
+                    // Resume control from here
+                    shard_status = Some(shard.clone());
+
+                    if let Some(sender) = compress_tx.take() {
+                        shard_forward_task = Some(tokio::spawn(forward_shard(
+                            shard.clone(),
+                            stream_writer.clone(),
+                            false,
+                            resume.d.seq,
+                        )));
+
+                        // Nothing can be specified regarding the compression
+                        // because that is not part of RESUME
+                        let _res = sender.send(None);
+                    } else {
+                        let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
+                    }
+                } else {
+                    let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
+                }
             }
             _ => {
                 if let Some(shard_status) = &shard_status {

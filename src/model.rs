@@ -7,10 +7,22 @@ pub struct Identify {
 }
 
 #[derive(Deserialize)]
+pub struct Resume {
+    pub d: ResumeInfo,
+}
+
+#[derive(Deserialize)]
 pub struct IdentifyInfo {
     #[serde(default)]
     pub compress: Option<bool>,
     pub shard: [u64; 2],
+    pub token: String,
+}
+
+#[derive(Deserialize)]
+pub struct ResumeInfo {
+    pub session_id: String,
+    pub seq: usize,
     pub token: String,
 }
 
