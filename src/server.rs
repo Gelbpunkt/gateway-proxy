@@ -1,5 +1,5 @@
 use flate2::{Compress, Compression, FlushCompress, Status};
-use futures_util::{Future, SinkExt, StreamExt};
+use futures_util::{Future, Sink, SinkExt, StreamExt};
 use hyper::{
     server::conn::AddrStream,
     service::{make_service_fn, service_fn},
@@ -9,7 +9,8 @@ use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{
-        mpsc::{unbounded_channel, UnboundedSender},
+        broadcast::error::RecvError,
+        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
 };
@@ -63,6 +64,51 @@ fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) 
     }
 }
 
+async fn sink_from_queue<S>(
+    addr: SocketAddr,
+    mut use_zlib: bool,
+    compress_rx: oneshot::Receiver<Option<bool>>,
+    mut message_stream: UnboundedReceiver<Message>,
+    mut sink: S,
+) -> Result<(), Error>
+where
+    S: Sink<Message, Error = Error> + Unpin,
+{
+    // Initialize a zlib encoder with similar settings to Discord's
+    let mut compress = Compress::new(Compression::fast(), true);
+    let mut compression_buffer = Vec::with_capacity(32 * 1024);
+
+    // At first, we will have to send a HELLO
+    if use_zlib {
+        compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
+
+        sink.send(Message::Binary(compression_buffer.clone()))
+            .await?;
+    } else {
+        sink.send(Message::Text(HELLO.to_string())).await?;
+    }
+
+    if compress_rx.await.contains(&Some(true)) {
+        use_zlib = true;
+    }
+
+    while let Some(msg) = message_stream.recv().await {
+        trace!("[{}] Sending {:?}", addr, msg);
+
+        if use_zlib {
+            compression_buffer.clear();
+            compress_full(&mut compress, &mut compression_buffer, &msg.into_data());
+
+            sink.send(Message::Binary(compression_buffer.clone()))
+                .await?;
+        } else {
+            sink.send(msg).await?;
+        }
+    }
+
+    Ok(())
+}
+
 async fn forward_shard(
     shard_status: Arc<Shard>,
     stream_writer: UnboundedSender<Message>,
@@ -105,14 +151,21 @@ async fn forward_shard(
         let _res = stream_writer.send(Message::Text(RESUMED.to_string()));
     }
 
-    while let Ok((mut payload, sequence)) = event_receiver.recv().await {
-        // Overwrite the sequence number
-        if let Some(SequenceInfo(_, sequence_range)) = sequence {
-            seq += 1;
-            payload.replace_range(sequence_range, &seq.to_string());
-        }
+    loop {
+        let res = event_receiver.recv().await;
 
-        let _res = stream_writer.send(Message::Text(payload));
+        if let Ok((mut payload, sequence)) = res {
+            // Overwrite the sequence number
+            if let Some(SequenceInfo(_, sequence_range)) = sequence {
+                seq += 1;
+                payload.replace_range(sequence_range, &seq.to_string());
+            }
+        } else if let Err(RecvError::Lagged(amt)) = res {
+            warn!(
+                "[Shard {}] Client is {} events behind!",
+                shard_status.id, amt
+            );
+        }
     }
 }
 
@@ -120,59 +173,30 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     addr: SocketAddr,
     stream: S,
     state: State,
-    mut use_zlib: bool,
+    use_zlib: bool,
 ) -> Result<(), Error> {
     // We use a oneshot channel to tell the forwarding task whether the IDENTIFY
     // contained a compression request
     let (compress_tx, compress_rx) = oneshot::channel();
     let mut compress_tx = Some(compress_tx);
 
-    // Initialize a zlib encoder with similar settings to Discord's
-    let mut compress = Compress::new(Compression::fast(), true);
-    let mut compression_buffer = Vec::with_capacity(32 * 1024);
-
     // We need to know which shard this client is connected to in order to send messages to it
     let mut shard_status = None;
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
-    let (mut sink, mut stream) = stream.split();
-
-    // Because we wait for IDENTIFY later, HELLO needs to be sent now
-    // and optionally compressed
-    if use_zlib {
-        compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
-
-        sink.send(Message::Binary(compression_buffer.clone()))
-            .await?;
-    } else {
-        sink.send(Message::Text(HELLO.to_string())).await?;
-    }
+    let (sink, mut stream) = stream.split();
 
     // Write all messages from a queue to the sink
-    let (stream_writer, mut stream_receiver) = unbounded_channel::<Message>();
+    let (stream_writer, stream_receiver) = unbounded_channel::<Message>();
 
-    let sink_task = tokio::spawn(async move {
-        if compress_rx.await.contains(&Some(true)) {
-            use_zlib = true;
-        }
-
-        while let Some(msg) = stream_receiver.recv().await {
-            trace!("[{}] Sending {:?}", addr, msg);
-
-            if use_zlib {
-                compression_buffer.clear();
-                compress_full(&mut compress, &mut compression_buffer, &msg.into_data());
-
-                sink.send(Message::Binary(compression_buffer.clone()))
-                    .await?;
-            } else {
-                sink.send(msg).await?;
-            }
-        }
-
-        Ok::<(), Error>(())
-    });
+    let sink_task = tokio::spawn(sink_from_queue(
+        addr,
+        use_zlib,
+        compress_rx,
+        stream_receiver,
+        sink,
+    ));
 
     let mut shard_forward_task = None;
 

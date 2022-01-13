@@ -47,6 +47,10 @@ twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "c
 ] }
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
 
+[patch.crates-io]
+# This tokio version is ~20+% faster under not full load
+tokio = { git = "https://github.com/tokio-rs/tokio.git", branch = "investigate-noop-wakes" }
+
 [profile.release]
 codegen-units = 1
 debug = false
