@@ -20,7 +20,6 @@ serde = { version = "1", features = ["derive"] }
 simd-json = { version = "0.4", default-features = false, features = [
     "serde_impl"
 ] }
-# Better match twilight-gateway here
 tokio-tungstenite = { version = "0.16", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "parking_lot",

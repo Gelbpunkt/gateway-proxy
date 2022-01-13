@@ -160,6 +160,8 @@ async fn forward_shard(
                 seq += 1;
                 payload.replace_range(sequence_range, &seq.to_string());
             }
+
+            let _res = stream_writer.send(Message::Text(payload));
         } else if let Err(RecvError::Lagged(amt)) = res {
             warn!(
                 "[Shard {}] Client is {} events behind!",
