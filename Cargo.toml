@@ -10,6 +10,7 @@ flate2 = { version = "1.0", default-features = false, features = ["zlib-ng-compa
 futures-util = { version = "0.3", default-features = false }
 halfbrown = "0.1"
 hyper = { version = "0.14", default-features = false, features = ["server", "http1", "http2"] }
+itoa = "1.0"
 libc = { version = "0.2", default-features = false }
 metrics = { git = "https://github.com/metrics-rs/metrics", default-features = false }
 metrics-exporter-prometheus = { git = "https://github.com/metrics-rs/metrics", default-features = false }

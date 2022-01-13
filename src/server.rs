@@ -5,6 +5,7 @@ use hyper::{
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
+use itoa::Buffer;
 use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
@@ -151,6 +152,9 @@ async fn forward_shard(
         let _res = stream_writer.send(Message::Text(RESUMED.to_string()));
     }
 
+    // For formatting the sequence number as a string, reuse a buffer
+    let mut buffer = Buffer::new();
+
     loop {
         let res = event_receiver.recv().await;
 
@@ -158,7 +162,7 @@ async fn forward_shard(
             // Overwrite the sequence number
             if let Some(SequenceInfo(_, sequence_range)) = sequence {
                 seq += 1;
-                payload.replace_range(sequence_range, &seq.to_string());
+                payload.replace_range(sequence_range, buffer.format(seq));
             }
 
             let _res = stream_writer.send(Message::Text(payload));

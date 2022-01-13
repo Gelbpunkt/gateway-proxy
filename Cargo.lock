@@ -251,6 +251,7 @@ dependencies = [
  "futures-util",
  "halfbrown",
  "hyper",
+ "itoa 1.0.1",
  "libc",
  "metrics",
  "metrics-exporter-prometheus",
