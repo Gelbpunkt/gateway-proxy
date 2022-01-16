@@ -2,7 +2,6 @@ use halfbrown::hashmap;
 use serde::Serialize;
 use simd_json::OwnedValue;
 use twilight_cache_inmemory::{InMemoryCache, UpdateCache};
-use twilight_gateway::Intents;
 use twilight_model::{
     channel::{message::Sticker, GuildChannel, StageInstance},
     gateway::{
@@ -17,7 +16,7 @@ use twilight_model::{
 
 use std::sync::Arc;
 
-use crate::{config::CONFIG, model::JsonObject};
+use crate::model::JsonObject;
 
 #[derive(Serialize)]
 pub struct Payload {
@@ -300,28 +299,13 @@ impl Guilds {
                 let voice_states = self.voice_states_in_guild(guild.id());
                 let threads = self.threads_in_guild(guild.id());
 
-                let approximate_member_count =
-                    if CONFIG.cache.members && CONFIG.intents.contains(Intents::GUILD_MEMBERS) {
-                        Some(members.len() as u64)
-                    } else {
-                        None
-                    };
-
-                let approximate_presence_count = if CONFIG.cache.presences
-                    && CONFIG.intents.contains(Intents::GUILD_PRESENCES)
-                {
-                    Some(presences.len() as u64)
-                } else {
-                    None
-                };
-
                 let new_guild = Guild {
                     afk_channel_id: guild.afk_channel_id(),
                     afk_timeout: guild.afk_timeout(),
                     application_id: guild.application_id(),
-                    approximate_member_count,
+                    approximate_member_count: None, // Only present in with_counts HTTP endpoint
                     banner: guild.banner().map(ToOwned::to_owned),
-                    approximate_presence_count,
+                    approximate_presence_count: None, // Only present in with_counts HTTP endpoint
                     channels: guild_channels,
                     default_message_notifications: guild.default_message_notifications(),
                     description: guild.description().map(ToString::to_string),

@@ -12,8 +12,8 @@ halfbrown = "0.1"
 hyper = { version = "0.14", default-features = false, features = ["server", "http1", "http2"] }
 itoa = "1.0"
 libc = { version = "0.2", default-features = false }
-metrics = { git = "https://github.com/metrics-rs/metrics", default-features = false }
-metrics-exporter-prometheus = { git = "https://github.com/metrics-rs/metrics", default-features = false }
+metrics = { version = "0.18", default-features = false }
+metrics-exporter-prometheus = { version = "0.8", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = ["override"] }
 parking_lot = "0.11"
 ring = { version = "0.16", default-features = false }
@@ -49,7 +49,7 @@ twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "
 
 [patch.crates-io]
 # This tokio version is ~20+% faster under not full load
-tokio = { git = "https://github.com/tokio-rs/tokio.git", branch = "investigate-noop-wakes" }
+tokio = { git = "https://github.com/tokio-rs/tokio.git", branch = "master" }
 
 [profile.release]
 codegen-units = 1
@@ -58,3 +58,4 @@ incremental = false
 lto = true
 opt-level = 3
 panic = "abort"
+debug-assertions = false
