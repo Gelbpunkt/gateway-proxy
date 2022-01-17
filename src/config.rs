@@ -4,7 +4,6 @@ use twilight_gateway::{EventTypeFlags, Intents};
 use twilight_model::gateway::presence::{Activity, Status};
 
 use std::{
-    convert::Into,
     fmt::{Display, Formatter, Result as FmtResult},
     fs::read_to_string,
     lazy::SyncLazy,
@@ -64,8 +63,8 @@ impl Default for Cache {
     }
 }
 
-impl Into<EventTypeFlags> for Cache {
-    fn into(self) -> EventTypeFlags {
+impl From<Cache> for EventTypeFlags {
+    fn from(cache: Cache) -> EventTypeFlags {
         let mut flags = EventTypeFlags::SHARD_PAYLOAD
             | EventTypeFlags::GUILD_CREATE
             | EventTypeFlags::GUILD_DELETE
@@ -73,43 +72,43 @@ impl Into<EventTypeFlags> for Cache {
             | EventTypeFlags::READY
             | EventTypeFlags::SHARD_RECONNECTING;
 
-        if self.members || self.current_member {
+        if cache.members || cache.current_member {
             flags |= EventTypeFlags::MEMBER_ADD
                 | EventTypeFlags::MEMBER_REMOVE
                 | EventTypeFlags::MEMBER_UPDATE;
         }
 
-        if self.roles {
+        if cache.roles {
             flags |= EventTypeFlags::ROLE_CREATE
                 | EventTypeFlags::ROLE_DELETE
                 | EventTypeFlags::ROLE_UPDATE;
         }
 
-        if self.channels {
+        if cache.channels {
             flags |= EventTypeFlags::CHANNEL_CREATE
                 | EventTypeFlags::CHANNEL_DELETE
                 | EventTypeFlags::CHANNEL_UPDATE;
         }
 
-        if self.presences {
+        if cache.presences {
             flags |= EventTypeFlags::PRESENCE_UPDATE;
         }
 
-        if self.emojis {
+        if cache.emojis {
             flags |= EventTypeFlags::GUILD_EMOJIS_UPDATE;
         }
 
-        if self.stage_instances {
+        if cache.stage_instances {
             flags |= EventTypeFlags::STAGE_INSTANCE_CREATE
                 | EventTypeFlags::STAGE_INSTANCE_DELETE
                 | EventTypeFlags::STAGE_INSTANCE_UPDATE;
         }
 
-        if self.voice_states {
+        if cache.voice_states {
             flags |= EventTypeFlags::VOICE_STATE_UPDATE | EventTypeFlags::VOICE_SERVER_UPDATE;
         }
 
-        if self.users {
+        if cache.users {
             flags |= EventTypeFlags::USER_UPDATE;
         }
 
@@ -117,47 +116,47 @@ impl Into<EventTypeFlags> for Cache {
     }
 }
 
-impl Into<ResourceType> for Cache {
-    fn into(self) -> ResourceType {
+impl From<Cache> for ResourceType {
+    fn from(cache: Cache) -> ResourceType {
         let mut resource_types = ResourceType::GUILD | ResourceType::USER_CURRENT;
 
-        if self.channels {
+        if cache.channels {
             resource_types |= ResourceType::CHANNEL;
         }
 
-        if self.emojis {
+        if cache.emojis {
             resource_types |= ResourceType::EMOJI;
         }
 
-        if self.current_member {
+        if cache.current_member {
             resource_types |= ResourceType::MEMBER_CURRENT;
         }
 
-        if self.members {
+        if cache.members {
             resource_types |= ResourceType::MEMBER;
         }
 
-        if self.presences {
+        if cache.presences {
             resource_types |= ResourceType::PRESENCE;
         }
 
-        if self.roles {
+        if cache.roles {
             resource_types |= ResourceType::ROLE;
         }
 
-        if self.stage_instances {
+        if cache.stage_instances {
             resource_types |= ResourceType::STAGE_INSTANCE;
         }
 
-        if self.stickers {
+        if cache.stickers {
             resource_types |= ResourceType::STICKER;
         }
 
-        if self.users {
+        if cache.users {
             resource_types |= ResourceType::USER;
         }
 
-        if self.voice_states {
+        if cache.voice_states {
             resource_types |= ResourceType::VOICE_STATE;
         }
 

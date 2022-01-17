@@ -4,8 +4,7 @@
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::cast_ptr_alignment,
-    clippy::struct_excessive_bools,
-    clippy::from_over_into
+    clippy::struct_excessive_bools
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use metrics_exporter_prometheus::PrometheusBuilder;
