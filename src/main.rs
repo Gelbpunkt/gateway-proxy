@@ -3,7 +3,6 @@
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
-    clippy::large_enum_variant,
     clippy::cast_ptr_alignment,
     clippy::struct_excessive_bools,
     clippy::from_over_into

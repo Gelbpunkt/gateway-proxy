@@ -30,7 +30,7 @@ pub struct Payload {
 #[serde(untagged)]
 pub enum Event {
     Ready(JsonObject),
-    GuildCreate(GuildCreate),
+    GuildCreate(Box<GuildCreate>),
     GuildDelete(GuildDelete),
 }
 
@@ -352,7 +352,7 @@ impl Guilds {
                 let guild_create = GuildCreate(new_guild);
 
                 Payload {
-                    d: Event::GuildCreate(guild_create),
+                    d: Event::GuildCreate(Box::new(guild_create)),
                     op: OpCode::Event,
                     t: String::from("GUILD_CREATE"),
                     s: *sequence,
