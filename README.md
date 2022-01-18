@@ -79,8 +79,6 @@ The proxy exposes Prometheus metrics at the `/metrics` endpoint. They contain ev
 
 ## Caveats
 
-`RESUME`s, while implemented, do not track previous compression state from an `IDENTIFY` yet.
-
 Voice support, while being present for a while, has been removed entirely. This is because the proxy would have to track voice sessions as sent by Discord, while also accounting for other caveats. I currently don't use this feature and would much prefer Discord to add a voice session API to their HTTP endpoints. The old implementation of this was ugly and very quickly hacked together; I would definitely appreciate a PR to implement this in a pretty and well-documented way, but won't do it myself for now.
 
 ## Performance
