@@ -1,8 +1,9 @@
 use parking_lot::RwLock;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use tokio::sync::{broadcast, Notify};
 use twilight_gateway::Shard as TwilightShard;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{cache, dispatch::BroadcastMessage, model::JsonObject};
 
@@ -61,12 +62,45 @@ pub struct Shard {
     pub guilds: cache::Guilds,
 }
 
+/// A session initiated by a client.
+#[derive(Clone)]
+pub struct Session {
+    /// Shard ID that this session is for.
+    pub shard_id: u64,
+    /// Compression as requested in IDENTIFY.
+    pub compress: Option<bool>,
+}
+
 /// Global state for all shards managed by the proxy.
 pub struct Inner {
     /// State of all shards managed by the proxy.
     pub shards: Vec<Arc<Shard>>,
     /// Total shard count.
     pub shard_count: u64,
+    /// All sessions active in the proxy.
+    pub sessions: RwLock<HashMap<String, Session>>,
+}
+
+impl Inner {
+    /// Get a session by its ID.
+    pub fn get_session(&self, session_id: &str) -> Option<Session> {
+        self.sessions.read().get(session_id).cloned()
+    }
+
+    /// Create a new session.
+    pub fn create_session(&self, session: Session) -> String {
+        // Session IDs are 32 bytes of ASCII
+        let mut rng = thread_rng();
+        let session_id: String = std::iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .map(char::from)
+            .take(32)
+            .collect();
+
+        self.sessions.write().insert(session_id.clone(), session);
+
+        session_id
+    }
 }
 
 /// A reference to the [`StateInner`] of the proxy.

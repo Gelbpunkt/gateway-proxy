@@ -9,6 +9,7 @@
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
+use parking_lot::RwLock;
 use tokio::sync::broadcast;
 use tracing::{debug, error, info};
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -18,7 +19,7 @@ use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
-use std::{error::Error, str::FromStr, sync::Arc};
+use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 
 use crate::config::CONFIG;
 
@@ -143,6 +144,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let state = Arc::new(state::Inner {
         shards,
         shard_count,
+        sessions: RwLock::new(HashMap::new()),
     });
 
     if let Err(e) = server::run(CONFIG.port, state, metrics_handle).await {

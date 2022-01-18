@@ -7,6 +7,7 @@ use hyper::{
 };
 use itoa::Buffer;
 use metrics_exporter_prometheus::PrometheusHandle;
+use simd_json::OwnedValue;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{
@@ -25,10 +26,11 @@ use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 use std::{convert::Infallible, net::SocketAddr, pin::Pin, sync::Arc};
 
 use crate::{
+    cache::Event,
     config::CONFIG,
     deserializer::{GatewayEvent, SequenceInfo},
     model::{Identify, Resume},
-    state::{Shard, State},
+    state::{Session, Shard, State},
     upgrade,
 };
 
@@ -111,6 +113,7 @@ where
 }
 
 async fn forward_shard(
+    session_id: String,
     shard_status: Arc<Shard>,
     stream_writer: UnboundedSender<Message>,
     send_guilds: bool,
@@ -129,9 +132,14 @@ async fn forward_shard(
 
     if send_guilds {
         // Get a fake ready payload to send to the client
-        let ready_payload = shard_status
+        let mut ready_payload = shard_status
             .guilds
             .get_ready_payload(ready_payload, &mut seq);
+
+        // Overwrite the session ID in the READY
+        if let Event::Ready(payload) = &mut ready_payload.d {
+            payload.insert(String::from("session_id"), OwnedValue::String(session_id));
+        }
 
         if let Ok(serialized) = simd_json::to_string(&ready_payload) {
             debug!("[Shard {}] Sending newly created READY", shard_status.id);
@@ -256,12 +264,20 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
                 trace!("[{}] Shard ID is {:?}", addr, shard_id);
 
+                // Create a new session for this client
+                let session = Session {
+                    shard_id,
+                    compress: identify.d.compress,
+                };
+                let session_id = state.create_session(session);
+
                 // The client is connected to this shard, so prepare for sending commands to it
                 let shard = state.shards[shard_id as usize].clone();
                 shard_status = Some(shard.clone());
 
                 if let Some(sender) = compress_tx.take() {
                     shard_forward_task = Some(tokio::spawn(forward_shard(
+                        session_id,
                         shard,
                         stream_writer.clone(),
                         true,
@@ -288,27 +304,24 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 }
 
                 // Find the shard that has the matching session ID
-                if let Some(shard) = state.shards.iter().find(|shard_status| {
-                    if let Ok(info) = shard_status.shard.info() {
-                        info.session_id().contains(&resume.d.session_id)
-                    } else {
-                        false
-                    }
-                }) {
-                    // Resume control from here
-                    shard_status = Some(shard.clone());
+                if let Some(session) = state.get_session(&resume.d.session_id) {
+                    debug!(
+                        "[{}] Successfully resuming session {}",
+                        addr, &resume.d.session_id
+                    );
+
+                    let shard = state.shards[session.shard_id as usize].clone();
 
                     if let Some(sender) = compress_tx.take() {
                         shard_forward_task = Some(tokio::spawn(forward_shard(
+                            resume.d.session_id,
                             shard.clone(),
                             stream_writer.clone(),
                             false,
                             resume.d.seq,
                         )));
 
-                        // Nothing can be specified regarding the compression
-                        // because that is not part of RESUME
-                        let _res = sender.send(None);
+                        let _res = sender.send(session.compress);
                     } else {
                         let _res = stream_writer.send(Message::text(INVALID_SESSION.to_string()));
                     }

@@ -91,4 +91,4 @@ Using 225 shards, with almost full caching (members, guilds, channels, roles, vo
 
 ## Known Issues / TODOs
 
-- Maybe adhere to this: `When initially connecting, if you don't have the GUILD_PRESENCES Gateway Intent, or if the guild is over 75k members, it will only send members who are in voice, plus the member for you (the connecting user). Otherwise, if a guild has over large_threshold members (value in the Gateway Identify), it will only send members who are online, have a role, have a nickname, or are in a voice channel, and if it has under large_threshold members, it will send all members.` (though I think this is already wrong documentation from Discord, a 30k member guild above threshold already only sends the bot member)
+- Readd voice support

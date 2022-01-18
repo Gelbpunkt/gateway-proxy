@@ -20,10 +20,10 @@ use crate::model::JsonObject;
 
 #[derive(Serialize)]
 pub struct Payload {
-    d: Event,
-    op: OpCode,
-    t: String,
-    s: usize,
+    pub d: Event,
+    pub op: OpCode,
+    pub t: String,
+    pub s: usize,
 }
 
 #[derive(Serialize, Clone)]
