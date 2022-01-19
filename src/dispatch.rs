@@ -104,7 +104,7 @@ pub async fn shard_latency(shard_state: Arc<Shard>) {
             let latency = info
                 .latency()
                 .recent()
-                .get(0)
+                .get(4)
                 .map_or(f64::NAN, Duration::as_secs_f64);
 
             metrics::histogram!("gateway_shard_latency_histogram", latency, "shard" => info.id().to_string());
