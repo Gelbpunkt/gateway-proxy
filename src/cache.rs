@@ -10,7 +10,10 @@ use twilight_model::{
         OpCode,
     },
     guild::{Emoji, Guild, Member, Role},
-    id::{marker::GuildMarker, Id},
+    id::{
+        marker::{GuildMarker, UserMarker},
+        Id,
+    },
     voice::VoiceState,
 };
 
@@ -148,29 +151,31 @@ impl Guilds {
             .unwrap_or_default()
     }
 
+    fn member(&self, guild_id: Id<GuildMarker>, user_id: Id<UserMarker>) -> Option<Member> {
+        let member = self.0.member(guild_id, user_id)?;
+
+        Some(Member {
+            avatar: member.avatar(),
+            communication_disabled_until: member.communication_disabled_until(),
+            deaf: member.deaf().unwrap_or_default(),
+            guild_id: member.guild_id(),
+            joined_at: member.joined_at(),
+            mute: member.mute().unwrap_or_default(),
+            nick: member.nick().map(ToString::to_string),
+            pending: member.pending(),
+            premium_since: member.premium_since(),
+            roles: member.roles().to_vec(),
+            user: self.0.user(member.user_id())?.value().clone(),
+        })
+    }
+
     fn members_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Member> {
         self.0
             .guild_members(guild_id)
             .map(|reference| {
                 reference
                     .iter()
-                    .filter_map(|user_id| {
-                        let member = self.0.member(guild_id, *user_id)?;
-
-                        Some(Member {
-                            avatar: member.avatar(),
-                            communication_disabled_until: member.communication_disabled_until(),
-                            deaf: member.deaf().unwrap_or_default(),
-                            guild_id: member.guild_id(),
-                            joined_at: member.joined_at(),
-                            mute: member.mute().unwrap_or_default(),
-                            nick: member.nick().map(ToString::to_string),
-                            pending: member.pending(),
-                            premium_since: member.premium_since(),
-                            roles: member.roles().to_vec(),
-                            user: self.0.user(member.user_id())?.value().clone(), // FIX?
-                        })
-                    })
+                    .filter_map(|user_id| self.member(guild_id, *user_id))
                     .collect()
             })
             .unwrap_or_default()
@@ -239,7 +244,24 @@ impl Guilds {
                 reference
                     .iter()
                     .filter_map(|user_id| {
-                        Some(self.0.voice_state(*user_id, guild_id)?.value().clone())
+                        let voice_state = self.0.voice_state(*user_id, guild_id)?;
+
+                        Some(VoiceState {
+                            channel_id: voice_state.channel_id(),
+                            deaf: voice_state.deaf(),
+                            guild_id: voice_state.guild_id(),
+                            member: self.member(guild_id, *user_id),
+                            mute: voice_state.mute(),
+                            self_deaf: voice_state.self_deaf(),
+                            self_mute: voice_state.self_mute(),
+                            self_stream: voice_state.self_stream(),
+                            self_video: voice_state.self_video(),
+                            session_id: voice_state.session_id().to_string(),
+                            suppress: voice_state.suppress(),
+                            token: voice_state.token().map(ToString::to_string),
+                            user_id: voice_state.user_id(),
+                            request_to_speak_timestamp: voice_state.request_to_speak_timestamp(),
+                        })
                     })
                     .collect()
             })
