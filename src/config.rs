@@ -21,6 +21,10 @@ pub struct Config {
     #[serde(default)]
     pub shards: Option<u64>,
     #[serde(default)]
+    pub shard_start: Option<u64>,
+    #[serde(default)]
+    pub shard_end: Option<u64>,
+    #[serde(default)]
     pub activity: Option<Activity>,
     #[serde(default = "default_status")]
     pub status: Status,
@@ -189,7 +193,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Self::InvalidConfig(s) => s.fmt(f),
-            Self::NotFound(s) => f.write_fmt(format_args!("File {} not found or access denied", s)),
+            Self::NotFound(s) => f.write_fmt(format_args!("File {s} not found or access denied")),
         }
     }
 }
@@ -206,7 +210,7 @@ pub static CONFIG: SyncLazy<Config> = SyncLazy::new(|| {
         Ok(config) => config,
         Err(err) => {
             // Avoid panicking
-            eprintln!("Config Error: {}", err);
+            eprintln!("Config Error: {err}");
             exit(1);
         }
     }

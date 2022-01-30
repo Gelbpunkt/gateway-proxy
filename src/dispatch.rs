@@ -64,18 +64,14 @@ pub async fn events(
             // We only want to relay dispatchable events, not RESUMEs and not READY
             // because we fake a READY event
             if op.0 == 0 {
-                trace!(
-                    "[Shard {}] Sending payload to clients: {:?}",
-                    shard_id,
-                    payload
-                );
+                trace!("[Shard {shard_id}] Sending payload to clients: {payload:?}",);
 
                 if is_ready {
                     let _res = broadcast_tx.send((payload, sequence));
                 }
             }
         } else if let Event::ShardReconnecting(_) = event {
-            debug!("[Shard {}] Reconnecting", shard_id);
+            debug!("[Shard {shard_id}] Reconnecting");
             shard_state.ready.set_not_ready();
             is_ready = false;
         } else {

@@ -49,7 +49,9 @@ Create a file `config.json` and fill in these fields as you wish:
 }
 ```
 
-If you have a fixed shard count, set `shards` to the amount of shards. If you're using twilight's HTTP-proxy, set `twilight_http_proxy` to the `ip:port` of the HTTP proxy.
+By default, the total shard count will be calculated using the `/api/gateway/bot` endpoint. If you want to change this, set `shards` to the amount of shards. It will also launch all shards by default, you can customize this to launch only a range of shards using `shard_start` and `shard_end` (start inclusive, end exclusive).
+
+If you're using twilight's HTTP-proxy, set `twilight_http_proxy` to the `ip:port` of the HTTP proxy.
 
 Take special care when setting cache flags, only enable what you actually need. The proxy will tend to send more than Discord would, so double check what your bot depends on.
 

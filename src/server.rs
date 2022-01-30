@@ -96,7 +96,7 @@ where
     }
 
     while let Some(msg) = message_stream.recv().await {
-        trace!("[{}] Sending {:?}", addr, msg);
+        trace!("[{addr}] Sending {msg:?}");
 
         if use_zlib {
             compression_buffer.clear();
@@ -121,11 +121,9 @@ async fn forward_shard(
 ) {
     // Subscribe to events for this shard
     let mut event_receiver = shard_status.events.subscribe();
+    let shard_id = shard_status.id;
 
-    debug!(
-        "[Shard {}] Starting to send events to client",
-        shard_status.id
-    );
+    debug!("[Shard {shard_id}] Starting to send events to client",);
 
     // Wait until we have a valid READY payload for this shard
     let ready_payload = shard_status.ready.wait_until_ready().await;
@@ -142,7 +140,7 @@ async fn forward_shard(
         }
 
         if let Ok(serialized) = simd_json::to_string(&ready_payload) {
-            debug!("[Shard {}] Sending newly created READY", shard_status.id);
+            debug!("[Shard {shard_id}] Sending newly created READY");
             let _res = stream_writer.send(Message::Text(serialized));
         };
 
@@ -150,8 +148,7 @@ async fn forward_shard(
         for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
             if let Ok(serialized) = simd_json::to_string(&payload) {
                 trace!(
-                    "[Shard {}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
-                    shard_status.id
+                    "[Shard {shard_id}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
                 );
                 let _res = stream_writer.send(Message::Text(serialized));
             };
@@ -175,10 +172,7 @@ async fn forward_shard(
 
             let _res = stream_writer.send(Message::Text(payload));
         } else if let Err(RecvError::Lagged(amt)) = res {
-            warn!(
-                "[Shard {}] Client is {} events behind!",
-                shard_status.id, amt
-            );
+            warn!("[Shard {shard_id}] Client is {amt} events behind!",);
         }
     }
 }
@@ -225,16 +219,16 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
         match deserializer.op() {
             1 => {
-                trace!("[{}] Sending heartbeat ACK", addr);
+                trace!("[{addr}] Sending heartbeat ACK");
                 let _res = stream_writer.send(Message::Text(HEARTBEAT_ACK.to_string()));
             }
             2 => {
-                debug!("[{}] Client is identifying", addr);
+                debug!("[{addr}] Client is identifying");
 
                 let identify: Identify = match simd_json::from_str(&mut payload) {
                     Ok(identify) => identify,
                     Err(e) => {
-                        warn!("[{}] Invalid identify payload: {:?}", addr, e);
+                        warn!("[{addr}] Invalid identify payload: {e:?}");
                         continue;
                     }
                 };
@@ -242,27 +236,20 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 let (shard_id, shard_count) = (identify.d.shard[0], identify.d.shard[1]);
 
                 if shard_count != state.shard_count {
-                    warn!(
-                        "[{}] Shard count from client identify mismatched, disconnecting",
-                        addr
-                    );
+                    warn!("[{addr}] Shard count from client identify mismatched, disconnecting",);
                     break;
                 }
 
                 if shard_id >= shard_count {
-                    warn!(
-                        "[{}] Shard ID from client is out of range, disconnecting",
-                        addr
-                    );
+                    warn!("[{addr}] Shard ID from client is out of range, disconnecting",);
                     break;
                 }
 
                 if identify.d.token != CONFIG.token {
-                    warn!("[{}] Token from client mismatched, disconnecting", addr);
-                    break;
+                    warn!("[{addr}] Token from client mismatched, disconnecting");
                 }
 
-                trace!("[{}] Shard ID is {:?}", addr, shard_id);
+                trace!("[{addr}] Shard ID is {shard_id}");
 
                 // Create a new session for this client
                 let session = Session {
@@ -288,33 +275,31 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 }
             }
             6 => {
-                debug!("[{}] Client is resuming", addr);
+                debug!("[{addr}] Client is resuming");
 
                 let resume: Resume = match simd_json::from_str(&mut payload) {
                     Ok(resume) => resume,
                     Err(e) => {
-                        warn!("[{}] Invalid resume payload: {:?}", addr, e);
+                        warn!("[{addr}] Invalid resume payload: {e:?}");
                         continue;
                     }
                 };
 
                 if resume.d.token != CONFIG.token {
-                    warn!("[{}] Token from client mismatched, disconnecting", addr);
+                    warn!("[{addr}] Token from client mismatched, disconnecting");
                     break;
                 }
 
                 // Find the shard that has the matching session ID
                 if let Some(session) = state.get_session(&resume.d.session_id) {
-                    debug!(
-                        "[{}] Successfully resuming session {}",
-                        addr, &resume.d.session_id
-                    );
+                    let session_id = resume.d.session_id;
+                    debug!("[{addr}] Successfully resuming session {session_id}",);
 
                     let shard = state.shards[session.shard_id as usize].clone();
 
                     if let Some(sender) = compress_tx.take() {
                         shard_forward_task = Some(tokio::spawn(forward_shard(
-                            resume.d.session_id,
+                            session_id,
                             shard.clone(),
                             stream_writer.clone(),
                             false,
@@ -331,22 +316,19 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             }
             _ => {
                 if let Some(shard_status) = &shard_status {
-                    trace!("[{}] Sending {:?} to Discord directly", addr, payload);
+                    trace!("[{addr}] Sending {payload:?} to Discord directly");
                     let _res = shard_status
                         .shard
                         .send(TwilightMessage::Text(payload))
                         .await;
                 } else {
-                    warn!(
-                        "[{}] Client attempted to send payload before IDENTIFY",
-                        addr
-                    );
+                    warn!("[{addr}] Client attempted to send payload before IDENTIFY",);
                 }
             }
         }
     }
 
-    debug!("[{}] Client disconnected", addr);
+    debug!("[{addr}] Client disconnected");
 
     sink_task.abort();
 
@@ -379,7 +361,7 @@ pub async fn run(
         let metrics_handle = metrics_handle.clone();
         let addr = addr.remote_addr();
 
-        trace!("[{:?}] New connection", addr);
+        trace!("[{addr:?}] New connection");
 
         async move {
             Ok::<_, Infallible>(service_fn(move |incoming: Request<Body>| {
@@ -396,10 +378,10 @@ pub async fn run(
 
     let server = Server::bind(&addr).serve(service);
 
-    info!("Listening on {}", addr);
+    info!("Listening on {addr}");
 
     if let Err(why) = server.await {
-        error!("Fatal server error: {}", why);
+        error!("Fatal server error: {why}");
     }
 
     Ok(())

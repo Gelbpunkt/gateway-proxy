@@ -1103,7 +1103,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "tokio"
 version = "1.16.1"
-source = "git+https://github.com/tokio-rs/tokio.git?branch=master#db18e0d39dd6a7bed940246dab63c6b6fb4b2f49"
+source = "git+https://github.com/tokio-rs/tokio.git?branch=master#2cee1db20c2cdd54fe0edb6cd717fb9ba89f09a3"
 dependencies = [
  "bytes",
  "libc",

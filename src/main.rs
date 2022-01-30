@@ -77,11 +77,14 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     );
 
     // Create all shards
-    let mut shards = Vec::with_capacity(shard_count as usize);
+    let shard_start = CONFIG.shard_start.unwrap_or(0);
+    let shard_end = CONFIG.shard_end.unwrap_or(shard_count);
+    let shard_end_inclusive = shard_end - 1;
+    let mut shards = Vec::with_capacity((shard_end - shard_start) as usize);
 
-    info!("Creating {} shards", shard_count);
+    info!("Creating shards {shard_start} to {shard_end_inclusive} of {shard_count} total",);
 
-    for shard_id in 0..shard_count {
+    for shard_id in shard_start..shard_end {
         let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)
             .queue(queue.clone())
             .shard(shard_id, shard_count)?
@@ -138,7 +141,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
         shards.push(shard_status);
 
-        debug!("Created shard {} of {} total", shard_id, shard_count);
+        debug!("Created shard {shard_id} of {shard_count} total");
     }
 
     let state = Arc::new(state::Inner {
