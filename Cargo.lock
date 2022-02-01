@@ -368,7 +368,7 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 [[package]]
 name = "hyper"
 version = "0.14.16"
-source = "git+https://github.com/hyperium/hyper.git?branch=master#f1b89c117cffebed4b2b8eb2d221fd9b25c1d3d1"
+source = "git+https://github.com/hyperium/hyper.git?branch=master#dcdd6d109069949ee68ba70ece4a2b4f21079479"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1103,14 +1103,14 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "tokio"
 version = "1.16.1"
-source = "git+https://github.com/tokio-rs/tokio.git?branch=master#2cee1db20c2cdd54fe0edb6cd717fb9ba89f09a3"
+source = "git+https://github.com/tokio-rs/tokio.git?branch=master#f6024102279adc3613ac2763dbdbeb5ba0fbcad1"
 dependencies = [
  "bytes",
  "libc",
  "memchr",
  "mio",
  "num_cpus",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.0",
  "pin-project-lite",
  "winapi",
 ]

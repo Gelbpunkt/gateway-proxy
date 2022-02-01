@@ -1,7 +1,7 @@
 use halfbrown::hashmap;
 use serde::Serialize;
 use simd_json::OwnedValue;
-use twilight_cache_inmemory::{InMemoryCache, UpdateCache};
+use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats, UpdateCache};
 use twilight_model::{
     channel::{message::Sticker, GuildChannel, StageInstance},
     gateway::{
@@ -46,6 +46,10 @@ impl Guilds {
 
     pub fn update(&self, value: impl UpdateCache) {
         self.0.update(value);
+    }
+
+    pub fn stats(&self) -> InMemoryCacheStats {
+        self.0.stats()
     }
 
     pub fn get_ready_payload(&self, mut ready: JsonObject, sequence: &mut usize) -> Payload {

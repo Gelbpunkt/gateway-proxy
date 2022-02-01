@@ -1,4 +1,5 @@
 use futures_util::StreamExt;
+use itoa::Buffer;
 use simd_json::Mutable;
 use tokio::{sync::broadcast, time::interval};
 use tracing::{debug, trace};
@@ -27,6 +28,9 @@ pub async fn events(
     // Therefore, we only put events in the queue while we are connected and READY
     let mut is_ready = false;
 
+    let mut buffer = Buffer::new();
+    let shard_id_str = buffer.format(shard_id).to_owned();
+
     while let Some(event) = events.next().await {
         if let Event::ShardPayload(body) = event {
             let mut payload = unsafe { String::from_utf8_unchecked(body.bytes) };
@@ -35,7 +39,7 @@ pub async fn events(
             let (op, sequence, event_type) = deserializer.into_parts();
 
             if let Some(EventTypeInfo(event_name, _)) = event_type {
-                metrics::increment_counter!("gateway_shard_events", "shard" => shard_id.to_string(), "event_type" => event_name.to_string());
+                metrics::increment_counter!("gateway_shard_events", "shard" => shard_id_str.clone(), "event_type" => event_name.to_owned());
 
                 if event_name == "READY" {
                     // Use the raw JSON from READY to create a new blank READY
@@ -80,8 +84,11 @@ pub async fn events(
     }
 }
 
-pub async fn shard_latency(shard_state: Arc<Shard>) {
-    let mut interval = interval(Duration::from_secs(60));
+pub async fn shard_statistics(shard_state: Arc<Shard>) {
+    let mut buffer = Buffer::new();
+    let shard_id_str = buffer.format(shard_state.id).to_owned();
+
+    let mut interval = interval(Duration::from_secs(10));
 
     loop {
         interval.tick().await;
@@ -97,19 +104,31 @@ pub async fn shard_latency(shard_state: Arc<Shard>) {
                 _ => f64::NAN,
             };
 
-            let latency = info
-                .latency()
-                .recent()
-                .get(4)
+            let latencies = info.latency().recent();
+            let latency = latencies
+                .get(latencies.len() - 1)
                 .map_or(f64::NAN, Duration::as_secs_f64);
 
-            metrics::histogram!("gateway_shard_latency_histogram", latency, "shard" => info.id().to_string());
+            metrics::histogram!("gateway_shard_latency_histogram", latency, "shard" => shard_id_str.clone());
             metrics::gauge!(
                 "gateway_shard_latency",
                 latency,
-                "shard" => info.id().to_string()
+                "shard" => shard_id_str.clone()
             );
-            metrics::histogram!("gateway_shard_status", connection_status, "shard" => info.id().to_string());
+            metrics::histogram!("gateway_shard_status", connection_status, "shard" => shard_id_str.clone());
         }
+
+        let stats = shard_state.guilds.stats();
+
+        metrics::gauge!("gateway_cache_emojis", stats.emojis() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_groups", stats.groups() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_guilds", stats.guilds() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_members", stats.members() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_presences", stats.presences() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_private_channels", stats.private_channels() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_roles", stats.roles() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_unavailable_guilds", stats.unavailable_guilds() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_users", stats.users() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_voice_states", stats.voice_states() as f64, "shard" => shard_id_str.clone());
     }
 }

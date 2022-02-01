@@ -112,6 +112,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         let cache = Arc::new(
             InMemoryCache::builder()
                 .resource_types(CONFIG.cache.clone().into())
+                .message_cache_size(0)
                 .build(),
         );
         let guild_cache = cache::Guilds::new(cache.clone(), shard_id);
@@ -137,7 +138,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         ));
 
         // Track the shard latency in metrics
-        tokio::spawn(dispatch::shard_latency(shard_status.clone()));
+        tokio::spawn(dispatch::shard_statistics(shard_status.clone()));
 
         shards.push(shard_status);
 
