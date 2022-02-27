@@ -17,20 +17,21 @@ hyper = { version = "0.14", default-features = false, features = [
     "http2"
 ] }
 itoa = "1.0"
+leaky-bucket-lite = { version = "0.5", default-features = false, features = ["parking_lot"] }
 libc = { version = "0.2", default-features = false }
 metrics = { version = "0.18", default-features = false }
 metrics-exporter-prometheus = { version = "0.8", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
     "override"
 ] }
-parking_lot = { version = "0.12", features = ["hardware-lock-elision"] }
+parking_lot = { version = "0.12", features = ["hardware-lock-elision", "nightly"] }
 rand = "0.8"
 ring = { version = "0.16", default-features = false }
 serde = { version = "1", features = ["derive"] }
 simd-json = { version = "0.4", default-features = false, features = [
     "serde_impl"
 ] }
-tokio-tungstenite = { version = "0.16", default-features = false }
+tokio-tungstenite = { version = "0.17", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "parking_lot",
     "rt-multi-thread"
@@ -60,9 +61,8 @@ twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "c
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
 
 [patch.crates-io]
-# This tokio version is ~20+% faster under not full load
-tokio = { git = "https://github.com/tokio-rs/tokio.git", branch = "master" }
-hyper = { git = "https://github.com/hyperium/hyper.git", branch = "master" }
+metrics = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }
+metrics-exporter-prometheus = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }
 value-trait = { git = "https://github.com/Gelbpunkt/value-trait.git" }
 
 [profile.release]
