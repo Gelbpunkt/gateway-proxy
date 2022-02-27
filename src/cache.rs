@@ -3,7 +3,7 @@ use serde::Serialize;
 use simd_json::OwnedValue;
 use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats, UpdateCache};
 use twilight_model::{
-    channel::{message::Sticker, GuildChannel, StageInstance},
+    channel::{message::Sticker, Channel, StageInstance},
     gateway::{
         payload::incoming::{GuildCreate, GuildDelete},
         presence::{Presence, UserOrId},
@@ -81,22 +81,19 @@ impl Guilds {
         }
     }
 
-    fn channels_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildChannel> {
+    fn channels_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Channel> {
         self.0
             .guild_channels(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|channel_id| {
-                        let channel = self.0.guild_channel(*channel_id)?;
+                        let channel = self.0.channel(*channel_id)?;
 
-                        if matches!(
-                            channel.value().resource(),
-                            GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
-                        ) {
+                        if channel.value().thread_metadata.is_some() {
                             None
                         } else {
-                            Some(channel.value().resource().clone())
+                            Some(channel.value().clone())
                         }
                     })
                     .collect()
@@ -251,9 +248,9 @@ impl Guilds {
                         let voice_state = self.0.voice_state(*user_id, guild_id)?;
 
                         Some(VoiceState {
-                            channel_id: voice_state.channel_id(),
+                            channel_id: Some(voice_state.channel_id()),
                             deaf: voice_state.deaf(),
-                            guild_id: voice_state.guild_id(),
+                            guild_id: Some(voice_state.guild_id()),
                             member: self.member(guild_id, *user_id),
                             mute: voice_state.mute(),
                             self_deaf: voice_state.self_deaf(),
@@ -272,20 +269,17 @@ impl Guilds {
             .unwrap_or_default()
     }
 
-    fn threads_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildChannel> {
+    fn threads_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Channel> {
         self.0
             .guild_channels(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|channel_id| {
-                        let channel = self.0.guild_channel(*channel_id)?;
+                        let channel = self.0.channel(*channel_id)?;
 
-                        if matches!(
-                            channel.value().resource(),
-                            GuildChannel::PrivateThread(_) | GuildChannel::PublicThread(_)
-                        ) {
-                            Some(channel.value().resource().clone())
+                        if channel.value().thread_metadata.is_some() {
+                            Some(channel.value().clone())
                         } else {
                             None
                         }

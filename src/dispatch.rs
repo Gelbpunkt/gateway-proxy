@@ -121,11 +121,10 @@ pub async fn shard_statistics(shard_state: Arc<Shard>) {
         let stats = shard_state.guilds.stats();
 
         metrics::gauge!("gateway_cache_emojis", stats.emojis() as f64, "shard" => shard_id_str.clone());
-        metrics::gauge!("gateway_cache_groups", stats.groups() as f64, "shard" => shard_id_str.clone());
         metrics::gauge!("gateway_cache_guilds", stats.guilds() as f64, "shard" => shard_id_str.clone());
         metrics::gauge!("gateway_cache_members", stats.members() as f64, "shard" => shard_id_str.clone());
         metrics::gauge!("gateway_cache_presences", stats.presences() as f64, "shard" => shard_id_str.clone());
-        metrics::gauge!("gateway_cache_private_channels", stats.private_channels() as f64, "shard" => shard_id_str.clone());
+        metrics::gauge!("gateway_cache_channels", stats.channels() as f64, "shard" => shard_id_str.clone());
         metrics::gauge!("gateway_cache_roles", stats.roles() as f64, "shard" => shard_id_str.clone());
         metrics::gauge!("gateway_cache_unavailable_guilds", stats.unavailable_guilds() as f64, "shard" => shard_id_str.clone());
         metrics::gauge!("gateway_cache_users", stats.users() as f64, "shard" => shard_id_str.clone());
