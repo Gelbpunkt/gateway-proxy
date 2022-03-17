@@ -17,14 +17,12 @@ hyper = { version = "0.14", default-features = false, features = [
     "http2"
 ] }
 itoa = "1.0"
-leaky-bucket-lite = { version = "0.5", default-features = false, features = ["parking_lot"] }
 libc = { version = "0.2", default-features = false }
 metrics = { version = "0.18", default-features = false }
-metrics-exporter-prometheus = { version = "0.8", default-features = false }
+metrics-exporter-prometheus = { version = "0.9", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
     "override"
 ] }
-parking_lot = { version = "0.12", features = ["hardware-lock-elision", "nightly"] }
 rand = "0.8"
 ring = { version = "0.16", default-features = false }
 serde = { version = "1", features = ["derive"] }
@@ -33,32 +31,27 @@ simd-json = { version = "0.4", default-features = false, features = [
 ] }
 tokio-tungstenite = { version = "0.17", default-features = false }
 tokio = { version = "1", default-features = false, features = [
-    "parking_lot",
     "rt-multi-thread"
 ] }
 tracing = { version = "0.1", default-features = false, features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = [
     "fmt",
-    "parking_lot",
     "std"
 ] }
-twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
-    "tracing"
-] }
-twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
+twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false }
+twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
     "zlib-simd",
     "simd-json",
     "rustls-webpki-roots",
-    "tracing"
 ] }
-twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
-    "rustls-webpki-roots"
+twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
+    "rustls-webpki-roots",
 ] }
-twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom", default-features = false, features = [
+twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
     "rustls-webpki-roots",
     "simd-json"
 ] }
-twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom" }
+twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new" }
 
 [patch.crates-io]
 metrics = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }

@@ -9,7 +9,6 @@
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
-use parking_lot::RwLock;
 use tokio::sync::broadcast;
 use tracing::{debug, error, info};
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -19,7 +18,12 @@ use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
-use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
+use std::{
+    collections::HashMap,
+    error::Error,
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 use crate::config::CONFIG;
 
@@ -88,7 +92,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)
             .queue(queue.clone())
             .shard(shard_id, shard_count)?
-            .gateway_url(Some(gateway.url.clone()))
+            .gateway_url(gateway.url.clone())
             .event_types(CONFIG.cache.clone().into());
 
         if let Some(mut activity) = CONFIG.activity.clone() {
@@ -105,7 +109,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         // we need to make a broadcast channel with the events
         let (broadcast_tx, _) = broadcast::channel(CONFIG.backpressure);
 
-        let (shard, events) = builder.build();
+        let (shard, events) = builder.build().await?;
 
         shard.start().await?;
 

@@ -1,9 +1,11 @@
-use parking_lot::RwLock;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use tokio::sync::{broadcast, Notify};
 use twilight_gateway::Shard as TwilightShard;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 use crate::{cache, dispatch::BroadcastMessage, model::JsonObject};
 
@@ -26,16 +28,16 @@ impl Ready {
     }
 
     pub fn is_ready(&self) -> bool {
-        self.inner.read().is_some()
+        self.inner.read().unwrap().is_some()
     }
 
     pub fn set_ready(&self, payload: JsonObject) {
-        *self.inner.write() = Some(payload);
+        *self.inner.write().unwrap() = Some(payload);
         self.changed.notify_waiters();
     }
 
     pub fn set_not_ready(&self) {
-        *self.inner.write() = None;
+        *self.inner.write().unwrap() = None;
         self.changed.notify_waiters();
     }
 
@@ -44,7 +46,7 @@ impl Ready {
             self.wait_changed().await;
         }
 
-        self.inner.read().clone().unwrap()
+        self.inner.read().unwrap().clone().unwrap()
     }
 }
 
@@ -84,7 +86,7 @@ pub struct Inner {
 impl Inner {
     /// Get a session by its ID.
     pub fn get_session(&self, session_id: &str) -> Option<Session> {
-        self.sessions.read().get(session_id).cloned()
+        self.sessions.read().unwrap().get(session_id).cloned()
     }
 
     /// Create a new session.
@@ -97,7 +99,10 @@ impl Inner {
             .take(32)
             .collect();
 
-        self.sessions.write().insert(session_id.clone(), session);
+        self.sessions
+            .write()
+            .unwrap()
+            .insert(session_id.clone(), session);
 
         session_id
     }
