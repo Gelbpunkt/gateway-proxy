@@ -148,13 +148,14 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
-version = "5.3.3"
+version = "5.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "391b56fbd302e585b7a9494fb70e40949567b1cf9003a8e4a6041a1687c26573"
+checksum = "3495912c9c1ccf2e18976439f4443f3fee0fd61f424ff99fde6a66b15ecb448f"
 dependencies = [
  "cfg-if",
  "hashbrown 0.12.1",
  "lock_api",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -169,13 +170,11 @@ dependencies = [
 
 [[package]]
 name = "flate2"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b39522e96686d38f4bc984b9198e3a0613264abaebaff2c5c918bfa6b6da09af"
+checksum = "f82b0f4c27ad9f8bfd1f3208d882da2b09c301bc1c828fd3a00d0216d2fbbff6"
 dependencies = [
- "cfg-if",
  "crc32fast",
- "libc",
  "libz-sys",
  "miniz_oxide",
 ]
@@ -365,9 +364,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ff4f84919677303da5f147645dbea6b1881f368d03ac84e1dc09031ebd7b2c6"
+checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes",
  "http",
@@ -388,9 +387,9 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 
 [[package]]
 name = "hyper"
-version = "0.14.18"
+version = "0.14.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b26ae0a80afebe130861d90abf98e3814a4f28a4c6ffeb5ab8ebb2be311e0ef2"
+checksum = "42dc3c131584288d375f2d07f822b0cb012d8c6fb899a5b9fdb3cb7eb9b6004f"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -437,9 +436,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f647032dfaa1f8b6dc29bd3edb7bbef4861b8b8007ebb118d6db284fd59f6ee"
+checksum = "e6012d540c5baa3589337a98ce73408de9b5a25ec9fc2c6fd6be8f0d39e0ca5a"
 dependencies = [
  "autocfg",
  "hashbrown 0.11.2",
@@ -477,9 +476,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.125"
+version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5916d2ae698f6de9bfb891ad7a8d65c09d232dc58cc4ac433c7da3b2fd84bc2b"
+checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 
 [[package]]
 name = "libmimalloc-sys"
@@ -492,9 +491,9 @@ dependencies = [
 
 [[package]]
 name = "libz-sys"
-version = "1.1.6"
+version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92e7e15d7610cce1d9752e137625f14e61a28cd45929b6e12e47b50fe154ee2e"
+checksum = "9702761c3935f8cc2f101793272e202c72b99da8f4224a19ddcf1279a6450bbf"
 dependencies = [
  "cc",
  "cmake",
@@ -660,9 +659,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.10.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f3e037eac156d1775da914196f0f37741a274155e34a0b7e427c35d2a2ecb9"
+checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
 
 [[package]]
 name = "ordered-float"
@@ -728,11 +727,11 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.38"
+version = "1.0.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9027b48e9d4c9175fa2218adf3557f91c1137021739951d4932f5f8268ac48aa"
+checksum = "c54b25569025b7fc9651de43004ae593a75ad88543b17178aa5e1b9c4f15f56f"
 dependencies = [
- "unicode-xid",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -825,9 +824,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.20.5"
+version = "0.20.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a024a432ae760ab3bff924ad91ce1cfa52cb57ed16e1ef32d0d249cfee1a6c13"
+checksum = "5aab8ee6c7097ed6057f43c187a62418d0c05a4bd5f18b3571db50ee0f9ce033"
 dependencies = [
  "log",
  "ring",
@@ -950,9 +949,9 @@ checksum = "f27f6278552951f1f2b8cf9da965d10969b2efdea95a6ec47987ab46edfe263a"
 
 [[package]]
 name = "sketches-ddsketch"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76a77a8fd93886010f05e7ea0720e569d6d16c65329dbe3ec033bbbccccb017b"
+checksum = "04d2ecae5fcf33b122e2e6bd520a57ccf152d2dde3b38c71039df1a6867264ee"
 
 [[package]]
 name = "slab"
@@ -984,13 +983,13 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "syn"
-version = "1.0.94"
+version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a07e33e919ebcd69113d5be0e4d70c5707004ff45188910106854f38b960df4a"
+checksum = "fbaf6116ab8924f39d52792136fb74fd60a80194cf1b1c6ffa6453eef1c3f942"
 dependencies = [
  "proc-macro2",
  "quote",
- "unicode-xid",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -1186,7 +1185,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1197,7 +1196,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1220,7 +1219,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "tokio",
  "tracing",
@@ -1230,7 +1229,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1249,7 +1248,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "futures-util",
  "http",
@@ -1260,7 +1259,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "bitflags",
  "serde",
@@ -1273,7 +1272,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#1c050fd22c514e7a6ac6152f0b1c5cbe67f5e061"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
 dependencies = [
  "twilight-model",
 ]
@@ -1291,6 +1290,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992"
 
 [[package]]
+name = "unicode-ident"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d22af068fba1eb5edcb4aea19d382b2a3deb4c8f9d475c589b6ada9e0fd493ee"
+
+[[package]]
 name = "unicode-normalization"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1298,12 +1303,6 @@ checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
 dependencies = [
  "tinyvec",
 ]
-
-[[package]]
-name = "unicode-xid"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "957e51f3646910546462e67d5f7599b9e4fb8acdd304b087a6494730f9eebf04"
 
 [[package]]
 name = "untrusted"
