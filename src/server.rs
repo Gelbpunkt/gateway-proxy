@@ -256,7 +256,8 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                     break;
                 }
 
-                if identify.d.token != CONFIG.token {
+                // Discord tokens may be prefixed by 'Bot ' in IDENTIFY
+                if identify.d.token.split_whitespace().last() != Some(&CONFIG.token) {
                     warn!("[{addr}] Token from client mismatched, disconnecting");
                 }
 
@@ -301,7 +302,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                     }
                 };
 
-                // Discord tokens may be prefixed by 'Bot ' in IDENTIFY
+                // Discord tokens may be prefixed by 'Bot ' in RESUME
                 if resume.d.token.split_whitespace().last() != Some(&CONFIG.token) {
                     warn!("[{addr}] Token from client mismatched, disconnecting");
                     break;
