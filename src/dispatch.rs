@@ -55,7 +55,6 @@ pub async fn events(
                             }
                         }
 
-
                         // We don't care if it was already set
                         // since this data is timeless
                         shard_state.ready.set_ready(ready.d);
@@ -82,7 +81,6 @@ pub async fn events(
 
                         continue;
                     }
-
                 } else if event_name == "RESUMED" {
                     is_ready = true;
 

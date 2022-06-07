@@ -8,9 +8,9 @@ use hyper::{
 use itoa::Buffer;
 use metrics_exporter_prometheus::PrometheusHandle;
 #[cfg(not(feature = "simd-json"))]
-use serde_json::{Value as OwnedValue, to_string};
+use serde_json::{to_string, Value as OwnedValue};
 #[cfg(feature = "simd-json")]
-use simd_json::{OwnedValue, to_string};
+use simd_json::{to_string, OwnedValue};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{
@@ -301,7 +301,8 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                     }
                 };
 
-                if resume.d.token != CONFIG.token {
+                // Discord tokens may be prefixed by 'Bot ' in IDENTIFY
+                if resume.d.token.split_whitespace().last() != Some(&CONFIG.token) {
                     warn!("[{addr}] Token from client mismatched, disconnecting");
                     break;
                 }
