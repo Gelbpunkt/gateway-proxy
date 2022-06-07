@@ -19,15 +19,21 @@ COPY .cargo ./.cargo/
 RUN mkdir src/
 RUN echo 'fn main() {}' > ./src/main.rs
 RUN source $HOME/.cargo/env && \
-    cargo build --release \
-        --target="$RUST_TARGET"
+    if [ "$TARGET_CPU" == 'x86-64' ]; then \
+        cargo build --release --target="$RUST_TARGET" --no-default-features --features no-simd; \
+    else \
+        cargo build --release --target="$RUST_TARGET"; \
+    fi
 
 RUN rm -f target/$RUST_TARGET/release/deps/gateway_proxy*
 COPY ./src ./src
 
 RUN source $HOME/.cargo/env && \
-    cargo build --release \
-        --target="$RUST_TARGET" && \
+    if [ "$TARGET_CPU" == 'x86-64' ]; then \
+        cargo build --release --target="$RUST_TARGET" --no-default-features --features no-simd; \
+    else \
+        cargo build --release --target="$RUST_TARGET"; \
+    fi && \
     cp target/$RUST_TARGET/release/gateway-proxy /gateway-proxy && \
     strip /gateway-proxy
 

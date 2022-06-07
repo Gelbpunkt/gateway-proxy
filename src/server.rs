@@ -7,7 +7,10 @@ use hyper::{
 };
 use itoa::Buffer;
 use metrics_exporter_prometheus::PrometheusHandle;
-use simd_json::OwnedValue;
+#[cfg(not(feature = "simd-json"))]
+use serde_json::{Value as OwnedValue, to_string};
+#[cfg(feature = "simd-json")]
+use simd_json::{OwnedValue, to_string};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{
@@ -139,14 +142,14 @@ async fn forward_shard(
             payload.insert(String::from("session_id"), OwnedValue::String(session_id));
         }
 
-        if let Ok(serialized) = simd_json::to_string(&ready_payload) {
+        if let Ok(serialized) = to_string(&ready_payload) {
             debug!("[Shard {shard_id}] Sending newly created READY");
             let _res = stream_writer.send(Message::Text(serialized));
         };
 
         // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
         for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
-            if let Ok(serialized) = simd_json::to_string(&payload) {
+            if let Ok(serialized) = to_string(&payload) {
                 trace!(
                     "[Shard {shard_id}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
                 );
@@ -210,7 +213,10 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
     while let Some(Ok(msg)) = stream.next().await {
         let data = msg.into_data();
+        #[cfg(feature = "simd-json")]
         let mut payload = unsafe { String::from_utf8_unchecked(data) };
+        #[cfg(not(feature = "simd-json"))]
+        let payload = unsafe { String::from_utf8_unchecked(data) };
 
         let deserializer = match GatewayEvent::from_json(&payload) {
             Some(deserializer) => deserializer,
@@ -225,7 +231,12 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             2 => {
                 debug!("[{addr}] Client is identifying");
 
-                let identify: Identify = match simd_json::from_str(&mut payload) {
+                #[cfg(feature = "simd-json")]
+                let maybe_identify = simd_json::from_str(&mut payload);
+                #[cfg(not(feature = "simd-json"))]
+                let maybe_identify = serde_json::from_str(&payload);
+
+                let identify: Identify = match maybe_identify {
                     Ok(identify) => identify,
                     Err(e) => {
                         warn!("[{addr}] Invalid identify payload: {e:?}");
@@ -277,7 +288,12 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             6 => {
                 debug!("[{addr}] Client is resuming");
 
-                let resume: Resume = match simd_json::from_str(&mut payload) {
+                #[cfg(feature = "simd-json")]
+                let maybe_resume = simd_json::from_str(&mut payload);
+                #[cfg(not(feature = "simd-json"))]
+                let maybe_resume = serde_json::from_str(&payload);
+
+                let resume: Resume = match maybe_resume {
                     Ok(resume) => resume,
                     Err(e) => {
                         warn!("[{addr}] Invalid resume payload: {e:?}");

@@ -5,7 +5,7 @@ jobs:
   build-docker-image:
     strategy:
       matrix:
-        target-cpu: ["znver3", "znver2", "haswell", "sandybridge"]
+        target-cpu: ["znver3", "znver2", "haswell", "sandybridge", "x86-64"]
 
     name: Build for ${{ matrix.target-cpu }}
     env:

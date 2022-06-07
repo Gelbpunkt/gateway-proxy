@@ -1,5 +1,8 @@
 use serde::Deserialize;
+#[cfg(feature = "simd-json")]
 use simd_json::OwnedValue;
+#[cfg(not(feature = "simd-json"))]
+use serde_json::Value as OwnedValue;
 
 #[derive(Deserialize)]
 pub struct Identify {

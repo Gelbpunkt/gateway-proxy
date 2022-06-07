@@ -6,11 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 base64 = "0.13"
-flate2 = { version = "1.0", default-features = false, features = [
-    "zlib-ng-compat"
-] }
+flate2 = { version = "1.0", default-features = false }
 futures-util = { version = "0.3", default-features = false }
-halfbrown = "0.1"
+halfbrown = { version = "0.1", features = ["serde"] }
 hyper = { version = "0.14", default-features = false, features = [
     "server",
     "http1",
@@ -18,17 +16,18 @@ hyper = { version = "0.14", default-features = false, features = [
 ] }
 itoa = "1.0"
 libc = { version = "0.2", default-features = false }
-metrics = { version = "0.18", default-features = false }
-metrics-exporter-prometheus = { version = "0.9", default-features = false }
+metrics = { version = "0.19", default-features = false }
+metrics-exporter-prometheus = { version = "0.10", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
     "override"
 ] }
 rand = "0.8"
 ring = { version = "0.16", default-features = false }
 serde = { version = "1", features = ["derive"] }
-simd-json = { version = "0.4", default-features = false, features = [
+serde_json = { version = "1", default-features = false, features = ["std"], optional = true }
+simd-json = { version = "0.5", default-features = false, features = [
     "serde_impl"
-] }
+], optional = true }
 tokio-tungstenite = { version = "0.17", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread"
@@ -40,8 +39,6 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
 ] }
 twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false }
 twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
-    "zlib-simd",
-    "simd-json",
     "rustls-webpki-roots",
 ] }
 twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
@@ -49,7 +46,6 @@ twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", br
 ] }
 twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
     "rustls-webpki-roots",
-    "simd-json"
 ] }
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new" }
 
@@ -57,6 +53,11 @@ twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "
 metrics = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }
 metrics-exporter-prometheus = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }
 value-trait = { git = "https://github.com/Gelbpunkt/value-trait.git" }
+
+[features]
+default = ["simd"]
+simd = ["flate2/zlib-ng", "simd-json", "twilight-gateway/zlib-simd", "twilight-gateway/simd-json", "twilight-http/simd-json"]
+no-simd = ["flate2/zlib", "serde_json"]
 
 [profile.release]
 codegen-units = 1

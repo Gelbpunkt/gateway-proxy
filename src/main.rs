@@ -77,7 +77,11 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     // Set up a queue for the shards
     let queue: Arc<dyn Queue> = Arc::new(
-        LargeBotQueue::new(gateway.session_start_limit.max_concurrency as usize, client).await,
+        LargeBotQueue::new(
+            gateway.session_start_limit.max_concurrency as usize,
+            client.clone(),
+        )
+        .await,
     );
 
     // Create all shards
@@ -90,6 +94,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     for shard_id in shard_start..shard_end {
         let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)
+            .http_client(client.clone())
             .queue(queue.clone())
             .shard(shard_id, shard_count)?
             .gateway_url(gateway.url.clone())
@@ -109,7 +114,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         // we need to make a broadcast channel with the events
         let (broadcast_tx, _) = broadcast::channel(CONFIG.backpressure);
 
-        let (shard, events) = builder.build().await?;
+        let (shard, events) = builder.build()?;
 
         shard.start().await?;
 

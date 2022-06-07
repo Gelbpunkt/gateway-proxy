@@ -57,9 +57,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.9.1"
+version = "3.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a45a46ab1f2412e53d3a0ade76ffad2025804294569aae387231a0cd6e0899"
+checksum = "37ccbd214614c6783386c1af30caf03192f17891059cecc394b4fb119e363de3"
 
 [[package]]
 name = "byteorder"
@@ -175,6 +175,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f82b0f4c27ad9f8bfd1f3208d882da2b09c301bc1c828fd3a00d0216d2fbbff6"
 dependencies = [
  "crc32fast",
+ "libz-ng-sys",
  "libz-sys",
  "miniz_oxide",
 ]
@@ -262,6 +263,7 @@ dependencies = [
  "rand",
  "ring",
  "serde",
+ "serde_json",
  "simd-json",
  "tokio",
  "tokio-tungstenite",
@@ -316,9 +318,9 @@ dependencies = [
 
 [[package]]
 name = "halfbrown"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "102968a036b06654b555049d9a6c4f46046805d1e1b22647720e93e0704d4c60"
+checksum = "ce69ed202df415a3d4a01e6f3341320ca88b9bd4f0bf37be6fa239cdea06d9bf"
 dependencies = [
  "hashbrown 0.12.1",
  "serde",
@@ -353,9 +355,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff8670570af52249509a86f5e3e18a08c60b177071826898fde8997cf5f6bfbb"
+checksum = "75f43d41e26995c17e71ee126451dd3941010b0514a81a9d11f3b341debc2399"
 dependencies = [
  "bytes",
  "fnv",
@@ -490,14 +492,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "libz-ng-sys"
+version = "1.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4399ae96a9966bf581e726de86969f803a81b7ce795fcd5480e640589457e0f2"
+dependencies = [
+ "cmake",
+ "libc",
+]
+
+[[package]]
 name = "libz-sys"
 version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9702761c3935f8cc2f101793272e202c72b99da8f4224a19ddcf1279a6450bbf"
 dependencies = [
  "cc",
- "cmake",
- "libc",
  "pkg-config",
  "vcpkg",
 ]
@@ -553,8 +563,8 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.18.1"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#095dd3a516b3b515fba529e7d4059d76a066db05"
+version = "0.19.0"
+source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#518544d2d7ea780388e8bd9f4107a0e72f34c59a"
 dependencies = [
  "ahash",
  "metrics-macros",
@@ -562,8 +572,8 @@ dependencies = [
 
 [[package]]
 name = "metrics-exporter-prometheus"
-version = "0.9.0"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#095dd3a516b3b515fba529e7d4059d76a066db05"
+version = "0.10.0"
+source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#518544d2d7ea780388e8bd9f4107a0e72f34c59a"
 dependencies = [
  "indexmap",
  "metrics",
@@ -576,7 +586,7 @@ dependencies = [
 [[package]]
 name = "metrics-macros"
 version = "0.5.1"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#095dd3a516b3b515fba529e7d4059d76a066db05"
+source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#518544d2d7ea780388e8bd9f4107a0e72f34c59a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -585,8 +595,8 @@ dependencies = [
 
 [[package]]
 name = "metrics-util"
-version = "0.12.1"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#095dd3a516b3b515fba529e7d4059d76a066db05"
+version = "0.13.0"
+source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#518544d2d7ea780388e8bd9f4107a0e72f34c59a"
 dependencies = [
  "atomic-shim",
  "crossbeam-epoch",
@@ -610,9 +620,9 @@ dependencies = [
 
 [[package]]
 name = "miniz_oxide"
-version = "0.5.1"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2b29bd4bc3f33391105ebee3589c19197c4271e3e5a9ec9bfe8127eeff8f082"
+checksum = "6f5c75688da582b8ffc1f1799e9db273f32133c49e048f614d22ec3256773ccc"
 dependencies = [
  "adler",
 ]
@@ -674,9 +684,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f5ec2493a61ac0506c0f4199f99070cbe83857b0337006a30f3e6719b8ef58"
+checksum = "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f"
 dependencies = [
  "lock_api",
  "parking_lot_core",
@@ -930,9 +940,9 @@ dependencies = [
 
 [[package]]
 name = "simd-json"
-version = "0.4.15"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0c3aaa7729b636ed4843efa96722f0d5823825b4f388d74c83757a3227f64d4"
+checksum = "3868f37d8473eb1410c71a8b88a5411778f72ae82bd72340b2355d1c133f2b6a"
 dependencies = [
  "halfbrown",
  "serde",
@@ -983,9 +993,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "syn"
-version = "1.0.95"
+version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbaf6116ab8924f39d52792136fb74fd60a80194cf1b1c6ffa6453eef1c3f942"
+checksum = "0748dd251e24453cb8717f0354206b91557e4ec8703673a4b30208f2abaf1ebf"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1048,9 +1058,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.18.2"
+version = "1.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4903bf0427cf68dddd5aa6a93220756f8be0c34fcfa9f5e6191e103e15a31395"
+checksum = "c51a52ed6686dd62c320f9b89299e9dfb46f730c7a48e635c19f21d116cb1439"
 dependencies = [
  "bytes",
  "libc",
@@ -1092,9 +1102,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f988a1a1adc2fb21f9c12aa96441da33a1728193ae0b95d2be22dbd17fcb4e5c"
+checksum = "cc463cd8deddc3770d20f9852143d50bf6094e640b485cb2e189a2099085ff45"
 dependencies = [
  "bytes",
  "futures-core",
@@ -1185,7 +1195,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1196,7 +1206,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1219,7 +1229,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "tokio",
  "tracing",
@@ -1229,7 +1239,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1248,7 +1258,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "futures-util",
  "http",
@@ -1259,7 +1269,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "bitflags",
  "serde",
@@ -1272,7 +1282,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.11.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#700289a0c7f6cb65972b58751cba8d37435e235e"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#c943c979c6dd19c21bfd78fe0737cad5d4a58c0a"
 dependencies = [
  "twilight-model",
 ]

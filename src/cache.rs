@@ -1,5 +1,9 @@
+#[cfg(feature = "simd-json")]
 use halfbrown::hashmap;
 use serde::Serialize;
+#[cfg(not(feature = "simd-json"))]
+use serde_json::Value as OwnedValue;
+#[cfg(feature = "simd-json")]
 use simd_json::OwnedValue;
 use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats, UpdateCache};
 use twilight_model::{
@@ -60,11 +64,21 @@ impl Guilds {
             .iter()
             .guilds()
             .map(|guild| {
-                hashmap! {
-                    String::from("id") => guild.id().to_string().into(),
-                    String::from("unavailable") => true.into(),
+                #[cfg(feature = "simd-json")]
+                {
+                    hashmap! {
+                        String::from("id") => guild.id().to_string().into(),
+                        String::from("unavailable") => true.into(),
+                    }
+                    .into()
                 }
-                .into()
+                #[cfg(not(feature = "simd-json"))]
+                {
+                    serde_json::json!({
+                        "id": guild.id().to_string(),
+                        "unavailable": true
+                    })
+                }
             })
             .collect();
 

@@ -1,5 +1,6 @@
 use futures_util::StreamExt;
 use itoa::Buffer;
+#[cfg(feature = "simd-json")]
 use simd_json::Mutable;
 use tokio::{sync::broadcast, time::interval};
 use tracing::{debug, trace};
@@ -42,22 +43,46 @@ pub async fn events(
                 metrics::increment_counter!("gateway_shard_events", "shard" => shard_id_str.clone(), "event_type" => event_name.to_owned());
 
                 if event_name == "READY" {
-                    // Use the raw JSON from READY to create a new blank READY
-                    let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
+                    #[cfg(feature = "simd-json")]
+                    {
+                        // Use the raw JSON from READY to create a new blank READY
+                        let mut ready: Ready = simd_json::from_str(&mut payload).unwrap();
 
-                    // Clear the guilds
-                    if let Some(guilds) = ready.d.get_mut("guilds") {
-                        if let Some(arr) = guilds.as_array_mut() {
-                            arr.clear();
+                        // Clear the guilds
+                        if let Some(guilds) = ready.d.get_mut("guilds") {
+                            if let Some(arr) = guilds.as_array_mut() {
+                                arr.clear();
+                            }
                         }
+
+
+                        // We don't care if it was already set
+                        // since this data is timeless
+                        shard_state.ready.set_ready(ready.d);
+                        is_ready = true;
+
+                        continue;
+                    }
+                    #[cfg(not(feature = "simd-json"))]
+                    {
+                        // Use the raw JSON from READY to create a new blank READY
+                        let mut ready: Ready = serde_json::from_str(&mut payload).unwrap();
+
+                        // Clear the guilds
+                        if let Some(guilds) = ready.d.get_mut("guilds") {
+                            if let Some(arr) = guilds.as_array_mut() {
+                                arr.clear();
+                            }
+                        }
+
+                        // We don't care if it was already set
+                        // since this data is timeless
+                        shard_state.ready.set_ready(ready.d);
+                        is_ready = true;
+
+                        continue;
                     }
 
-                    // We don't care if it was already set
-                    // since this data is timeless
-                    shard_state.ready.set_ready(ready.d);
-                    is_ready = true;
-
-                    continue;
                 } else if event_name == "RESUMED" {
                     is_ready = true;
 
