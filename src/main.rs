@@ -114,7 +114,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         // we need to make a broadcast channel with the events
         let (broadcast_tx, _) = broadcast::channel(CONFIG.backpressure);
 
-        let (shard, events) = builder.build()?;
+        let (shard, events) = builder.build_unvalidated();
 
         shard.start().await?;
 
