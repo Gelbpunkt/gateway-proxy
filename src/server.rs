@@ -259,6 +259,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 // Discord tokens may be prefixed by 'Bot ' in IDENTIFY
                 if identify.d.token.split_whitespace().last() != Some(&CONFIG.token) {
                     warn!("[{addr}] Token from client mismatched, disconnecting");
+                    break;
                 }
 
                 trace!("[{addr}] Shard ID is {shard_id}");
