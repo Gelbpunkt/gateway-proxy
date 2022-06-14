@@ -61,12 +61,12 @@ Compiling this from source isn't the most fun, you'll need a nightly Rust compil
 
 Instead, I recommend running the Docker images that are prebuilt by CI.
 
-`docker.io/gelbpunkt/gateway-proxy:latest` requires a Haswell-family CPU or newer (due to AVX2) and will perform best, `docker.io/gelbpunkt/gateway-proxy:sandybridge` requires a Sandy Bridge-family CPU or newer and will perform slightly worse.
+The Docker images are tagged based on the CPU microarchitecture that they are built and tuned for, currently either `znver3` (Zen 3), `znver2` (Zen 2), `haswell`, `sandybridge` or `x86-64` (the only target with SIMD disabled, therefore the most compatible).
 
 To run the image, mount the config file at `/config.json`, for example:
 
 ```bash
-docker run --rm -it -v /path/to/my/config.json:/config.json docker.io/gelbpunkt/gateway-proxy:latest
+docker run --rm -it -v /path/to/my/config.json:/config.json docker.io/gelbpunkt/gateway-proxy:haswell
 ```
 
 ## Connecting
