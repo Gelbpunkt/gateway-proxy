@@ -94,7 +94,6 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     for shard_id in shard_start..shard_end {
         let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)
-            .http_client(client.clone())
             .queue(queue.clone())
             .shard(shard_id, shard_count)?
             .gateway_url(gateway.url.clone())
@@ -114,7 +113,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         // we need to make a broadcast channel with the events
         let (broadcast_tx, _) = broadcast::channel(CONFIG.backpressure);
 
-        let (shard, events) = builder.build_unvalidated();
+        let (shard, events) = builder.build();
 
         shard.start().await?;
 
