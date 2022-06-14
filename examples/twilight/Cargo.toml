@@ -1,0 +1,32 @@
+[package]
+name = "twilight-example"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+futures-util = { version = "0.3", default-features = false }
+tokio = { version = "1", default-features = false, features = [
+    "rt-multi-thread"
+] }
+twilight-gateway = { git = "https://github.com/twilight-rs/twilight", branch = "next", default-features = false, features = [
+    "simd-json"
+] }
+twilight-gateway-queue = { git = "https://github.com/twilight-rs/twilight", branch = "next", default-features = false }
+twilight-http = { git = "https://github.com/twilight-rs/twilight", branch = "next", default-features = false, features = [
+    "simd-json"
+] }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "fmt",
+    "std"
+] }
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = true
+opt-level = 3
+panic = "abort"
+debug-assertions = false
