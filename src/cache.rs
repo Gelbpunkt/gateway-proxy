@@ -346,7 +346,7 @@ impl Guilds {
                     discovery_splash: guild.discovery_splash().map(ToOwned::to_owned),
                     emojis,
                     explicit_content_filter: guild.explicit_content_filter(),
-                    features: guild.features().map(ToString::to_string).collect(),
+                    features: guild.features().cloned().collect(),
                     icon: guild.icon().map(ToOwned::to_owned),
                     id: guild.id(),
                     joined_at: guild.joined_at(),

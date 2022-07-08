@@ -10,8 +10,8 @@ use twilight_model::gateway::presence::{Activity, Status};
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     fs::read_to_string,
-    lazy::SyncLazy,
     process::exit,
+    sync::LazyLock,
 };
 
 #[derive(Deserialize)]
@@ -218,7 +218,7 @@ pub fn load(path: &str) -> Result<Config, Error> {
     Ok(config)
 }
 
-pub static CONFIG: SyncLazy<Config> = SyncLazy::new(|| {
+pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     match load("config.json") {
         Ok(config) => config,
         Err(err) => {
