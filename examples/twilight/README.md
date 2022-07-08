@@ -6,4 +6,4 @@ Logging is set to DEBUG by default to showcase that heartbeating is working and 
 
 For this to work, run the http-proxy on port 8080 and the gateway-proxy on port 7878.
 
-Export the token under the `TOKEN` enviroment variable before running the bot.
+Export the token under the `TOKEN` environment variable before running the bot.

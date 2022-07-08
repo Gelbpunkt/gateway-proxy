@@ -49,6 +49,8 @@ Create a file `config.json` and fill in these fields as you wish:
 }
 ```
 
+You can omit the `token` key entirely and set the `TOKEN` environment variable when running to avoid putting credentials in the configuration file.
+
 By default, the total shard count will be calculated using the `/api/gateway/bot` endpoint. If you want to change this, set `shards` to the amount of shards. It will also launch all shards by default, you can customize this to launch only a range of shards using `shard_start` and `shard_end` (start inclusive, end exclusive).
 
 If you're using twilight's HTTP-proxy, set `twilight_http_proxy` to the `ip:port` of the HTTP proxy.
@@ -91,4 +93,4 @@ Using 225 shards, with almost full caching (members, guilds, channels, roles, vo
 
 ## Known Issues / TODOs
 
-- Readd voice support
+- Re-add voice support

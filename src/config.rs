@@ -8,6 +8,7 @@ use twilight_gateway::{EventTypeFlags, Intents};
 use twilight_model::gateway::presence::{Activity, Status};
 
 use std::{
+    env::var,
     fmt::{Display, Formatter, Result as FmtResult},
     fs::read_to_string,
     process::exit,
@@ -18,6 +19,7 @@ use std::{
 pub struct Config {
     #[serde(default = "default_log_level")]
     pub log_level: String,
+    #[serde(default = "token_fallback")]
     pub token: String,
     pub intents: Intents,
     #[serde(default = "default_port")]
@@ -178,6 +180,15 @@ fn default_log_level() -> String {
 
 fn default_port() -> u16 {
     7878
+}
+
+fn token_fallback() -> String {
+    if let Ok(token) = var("TOKEN") {
+        token
+    } else {
+        eprintln!("Config Error: token is not present and TOKEN environment variable is not set");
+        exit(1);
+    }
 }
 
 fn default_status() -> Status {
