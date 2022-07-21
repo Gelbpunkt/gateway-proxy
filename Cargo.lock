@@ -20,15 +20,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic-shim"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67cd4b51d303cf3501c301e8125df442128d3c6d7c69f71b27833d253de47e77"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -69,9 +60,9 @@ checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "bytes"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
+checksum = "f0b3de4a0c5e67e16066a0715723abd91edc2f9001d09c46e1dca929351e130e"
 
 [[package]]
 name = "cc"
@@ -138,9 +129,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-common"
-version = "0.1.4"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5999502d32b9c48d492abe66392408144895020ec4709e549e840799f3bb74c0"
+checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
 dependencies = [
  "generic-array",
  "typenum",
@@ -153,7 +144,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3495912c9c1ccf2e18976439f4443f3fee0fd61f424ff99fde6a66b15ecb448f"
 dependencies = [
  "cfg-if",
- "hashbrown 0.12.1",
+ "hashbrown",
  "lock_api",
  "parking_lot_core",
 ]
@@ -322,24 +313,15 @@ version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce69ed202df415a3d4a01e6f3341320ca88b9bd4f0bf37be6fa239cdea06d9bf"
 dependencies = [
- "hashbrown 0.12.1",
+ "hashbrown",
  "serde",
 ]
 
 [[package]]
 name = "hashbrown"
-version = "0.11.2"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
-dependencies = [
- "ahash",
-]
-
-[[package]]
-name = "hashbrown"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
+checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
  "ahash",
 ]
@@ -443,7 +425,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
- "hashbrown 0.12.1",
+ "hashbrown",
 ]
 
 [[package]]
@@ -563,22 +545,26 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.19.0"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#912d7523be790f60934bdb4bc584a5cc7efd631a"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94a70dc6c8179c4e889928dffb92336b821462c7b7613de91304fe80040fec12"
 dependencies = [
  "ahash",
  "metrics-macros",
+ "portable-atomic",
 ]
 
 [[package]]
 name = "metrics-exporter-prometheus"
-version = "0.10.0"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#912d7523be790f60934bdb4bc584a5cc7efd631a"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8603921e1f54ef386189335f288441af761e0fc61bcb552168d9cedfe63ebc70"
 dependencies = [
  "indexmap",
  "metrics",
  "metrics-util",
  "parking_lot",
+ "portable-atomic",
  "quanta",
  "thiserror",
 ]
@@ -586,7 +572,8 @@ dependencies = [
 [[package]]
 name = "metrics-macros"
 version = "0.5.1"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#912d7523be790f60934bdb4bc584a5cc7efd631a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49e30813093f757be5cf21e50389a24dc7dbb22c49f23b7e8f51d69b508a5ffa"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -595,16 +582,17 @@ dependencies = [
 
 [[package]]
 name = "metrics-util"
-version = "0.13.0"
-source = "git+https://github.com/metrics-rs/metrics.git?branch=dependabot/cargo/parking_lot-0.12#912d7523be790f60934bdb4bc584a5cc7efd631a"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7d24dc2dbae22bff6f1f9326ffce828c9f07ef9cc1e8002e5279f845432a30a"
 dependencies = [
- "atomic-shim",
  "crossbeam-epoch",
  "crossbeam-utils",
- "hashbrown 0.11.2",
+ "hashbrown",
  "metrics",
  "num_cpus",
  "parking_lot",
+ "portable-atomic",
  "quanta",
  "sketches-ddsketch",
 ]
@@ -730,6 +718,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 
 [[package]]
+name = "portable-atomic"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "763095e04dcbeb889b2ab35296ecb18a20fe16b4e9877ce64aab73d8fd05a8c3"
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -746,9 +740,9 @@ dependencies = [
 
 [[package]]
 name = "quanta"
-version = "0.9.3"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20afe714292d5e879d8b12740aa223c6a88f118af41870e8b6196e39a02238a8"
+checksum = "b7e31331286705f455e56cca62e0e717158474ff02b7936c1fa596d983f4ae27"
 dependencies = [
  "crossbeam-utils",
  "libc",
@@ -868,9 +862,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.138"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1578c6245786b9d168c5447eeacfb96856573ca56c9d68fdcf394be134882a47"
+checksum = "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
 dependencies = [
  "serde_derive",
 ]
@@ -887,9 +881,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.138"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "023e9b1467aef8a10fb88f25611870ada9800ef7e22afce356bb0d2387b6f27c"
+checksum = "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -965,9 +959,12 @@ checksum = "ceb945e54128e09c43d8e4f1277851bd5044c6fc540bbaa2ad888f60b3da9ae7"
 
 [[package]]
 name = "slab"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb703cfe953bccee95685111adeedb76fabe4e97549a58d16f03ea7b9367bb32"
+checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "smallvec"
@@ -1058,10 +1055,11 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.19.2"
+version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51a52ed6686dd62c320f9b89299e9dfb46f730c7a48e635c19f21d116cb1439"
+checksum = "57aec3cfa4c296db7255446efb4928a6be304b431a806216105542a67b6ca82e"
 dependencies = [
+ "autocfg",
  "bytes",
  "libc",
  "memchr",
@@ -1086,9 +1084,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
-version = "0.17.1"
+version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06cda1232a49558c46f8a504d5b93101d42c0bf7f911f12a105ba48168f821ae"
+checksum = "f714dd15bead90401d77e04243611caec13726c2408afd5b31901dfcdcb3b181"
 dependencies = [
  "futures-util",
  "log",
@@ -1155,9 +1153,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.14"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a713421342a5a666b7577783721d3117f1b69a393df803ee17bb73b1e122a59"
+checksum = "60db860322da191b40952ad9affe65ea23e7dd6a5c442c2c42865810c6ab8e6b"
 dependencies = [
  "sharded-slab",
  "thread_local",
@@ -1172,9 +1170,9 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
 name = "tungstenite"
-version = "0.17.2"
+version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d96a2dea40e7570482f28eb57afbe42d97551905da6a9400acc5c328d24004f5"
+checksum = "e27992fd6a8c29ee7eef28fc78349aa244134e10ad447ce3b9f0ac0ed0fa4ce0"
 dependencies = [
  "base64",
  "byteorder",
@@ -1193,8 +1191,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-cache-inmemory"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.0"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1204,8 +1202,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-gateway"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.0"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1227,8 +1225,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-gateway-queue"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.0"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "tokio",
  "tracing",
@@ -1237,8 +1235,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-http"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.0"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1256,8 +1254,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-http-ratelimiting"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.0"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "futures-util",
  "http",
@@ -1267,8 +1265,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-model"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.1"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "bitflags",
  "serde",
@@ -1280,8 +1278,8 @@ dependencies = [
 
 [[package]]
 name = "twilight-validate"
-version = "0.11.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#e47aedd875169b64cf278acaea3c4f09e70e84de"
+version = "0.12.0"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=custom-new#212c6099e502d2241878e0fd1189c5e5c00be745"
 dependencies = [
  "twilight-model",
 ]
@@ -1300,9 +1298,9 @@ checksum = "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bd2fe26506023ed7b5e1e315add59d6f584c621d037f9368fea9cfb988f368c"
+checksum = "15c61ba63f9235225a22310255a29b806b907c9b8c964bcbd0a2c70f3f2deea7"
 
 [[package]]
 name = "unicode-normalization"
@@ -1459,9 +1457,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.22.3"
+version = "0.22.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44d8de8415c823c8abd270ad483c6feeac771fad964890779f9a8cb24fbbc1bf"
+checksum = "f1c760f0d366a6c24a02ed7816e23e691f5d92291f94d15e836006fd11b04daf"
 dependencies = [
  "webpki",
 ]

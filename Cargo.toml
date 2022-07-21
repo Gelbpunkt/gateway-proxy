@@ -16,8 +16,8 @@ hyper = { version = "0.14", default-features = false, features = [
 ] }
 itoa = "1.0"
 libc = { version = "0.2", default-features = false }
-metrics = { version = "0.19", default-features = false }
-metrics-exporter-prometheus = { version = "0.10", default-features = false }
+metrics = { version = "0.20", default-features = false }
+metrics-exporter-prometheus = { version = "0.11", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
     "override"
 ] }
@@ -48,10 +48,6 @@ twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "c
     "rustls-webpki-roots",
 ] }
 twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new" }
-
-[patch.crates-io]
-metrics = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }
-metrics-exporter-prometheus = { git = "https://github.com/metrics-rs/metrics.git", branch = "dependabot/cargo/parking_lot-0.12" }
 
 [features]
 default = ["simd"]
