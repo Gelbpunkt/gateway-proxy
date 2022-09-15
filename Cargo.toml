@@ -25,10 +25,10 @@ rand = "0.8"
 ring = { version = "0.16", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = ["std"], optional = true }
-simd-json = { version = "0.6", default-features = false, features = [
+simd-json = { version = "0.7", default-features = false, features = [
     "serde_impl"
 ], optional = true }
-tokio-tungstenite = { version = "0.17", default-features = false }
+tokio-tungstenite = { version = "0.18", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread"
 ] }
@@ -37,17 +37,17 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "fmt",
     "std"
 ] }
-twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false }
-twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
+twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false }
+twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
     "rustls-webpki-roots",
 ] }
-twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
+twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+    "twilight-http",
+] }
+twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
     "rustls-webpki-roots",
 ] }
-twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new", default-features = false, features = [
-    "rustls-webpki-roots",
-] }
-twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "custom-new" }
+twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom" }
 
 [features]
 default = ["simd"]

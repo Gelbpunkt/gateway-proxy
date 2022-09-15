@@ -2,7 +2,10 @@ use std::{error::Error, sync::Arc};
 
 use futures_util::StreamExt;
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
-use twilight_gateway::{Cluster, Intents};
+use twilight_gateway::{
+    stream::{create_recommended, ShardEventStream},
+    Config, Intents,
+};
 use twilight_gateway_queue::NoOpQueue;
 use twilight_http::Client;
 
@@ -24,19 +27,21 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
             .build(),
     );
 
-    let (cluster, mut events) = Cluster::builder(token, Intents::all())
-        .gateway_url(String::from("ws://localhost:7878"))
-        .http_client(http)
-        .ratelimit_payloads(false)
-        .queue(queue)
-        .build()
-        .await?;
+    let mut shards = create_recommended(&http, |_| {
+        Config::builder(token.clone(), Intents::all())
+            .proxy_url(String::from("ws://localhost:7878"))
+            .ratelimit_messages(false)
+            .queue(queue.clone())
+            .build()
+    })
+    .await?
+    .collect::<Vec<_>>();
+    let mut stream = ShardEventStream::new(shards.iter_mut());
 
-    cluster.up().await;
-
-    while let Some((shard, event)) = events.next().await {
+    while let Some((shard, Ok(event))) = stream.next().await {
+        let id = shard.id();
         let kind = event.kind();
-        tracing::info!("Shard {shard}: {kind:?}");
+        tracing::info!("Shard {id}: {kind:?}");
         tracing::debug!("Event payload: {event:?}");
     }
 

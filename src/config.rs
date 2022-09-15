@@ -75,12 +75,10 @@ impl Default for Cache {
 
 impl From<Cache> for EventTypeFlags {
     fn from(cache: Cache) -> EventTypeFlags {
-        let mut flags = EventTypeFlags::SHARD_PAYLOAD
-            | EventTypeFlags::GUILD_CREATE
+        let mut flags = EventTypeFlags::GUILD_CREATE
             | EventTypeFlags::GUILD_DELETE
             | EventTypeFlags::GUILD_UPDATE
-            | EventTypeFlags::READY
-            | EventTypeFlags::SHARD_RECONNECTING;
+            | EventTypeFlags::READY;
 
         if cache.members || cache.current_member {
             flags |= EventTypeFlags::MEMBER_ADD
@@ -220,7 +218,7 @@ impl Display for Error {
 #[cfg(feature = "simd-json")]
 pub fn load(path: &str) -> Result<Config, Error> {
     let mut content = read_to_string(path).map_err(|_| Error::NotFound(path.to_string()))?;
-    let config = simd_json::from_str(&mut content).map_err(Error::InvalidConfig)?;
+    let config = unsafe { simd_json::from_str(&mut content) }.map_err(Error::InvalidConfig)?;
 
     Ok(config)
 }
