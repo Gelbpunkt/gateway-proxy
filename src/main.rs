@@ -13,7 +13,7 @@ use tokio::sync::broadcast;
 use tracing::{debug, error, info};
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::Shard;
+use twilight_gateway::{Config, Shard, ShardId};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
@@ -71,7 +71,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let client = Arc::new(client_builder.build());
 
     // Check total shards required
-    let gateway = client.gateway().authed().exec().await?.model().await?;
+    let gateway = client.gateway().authed().await?.model().await?;
 
     let shard_count = CONFIG.shards.unwrap_or(gateway.shards);
 
@@ -93,10 +93,8 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     info!("Creating shards {shard_start} to {shard_end_inclusive} of {shard_count} total",);
 
     for shard_id in shard_start..shard_end {
-        let mut builder = Shard::builder(CONFIG.token.clone(), CONFIG.intents)
+        let mut builder = Config::builder(CONFIG.token.clone(), CONFIG.intents)
             .queue(queue.clone())
-            .shard(shard_id, shard_count)?
-            .gateway_url(gateway.url.clone())
             .event_types(CONFIG.cache.clone().into());
 
         if let Some(mut activity) = CONFIG.activity.clone() {
@@ -109,13 +107,11 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
             );
         }
 
+        let shard = Shard::with_config(ShardId::new(shard_id, shard_count), builder.build());
+
         // To support multiple listeners on the same shard
         // we need to make a broadcast channel with the events
         let (broadcast_tx, _) = broadcast::channel(CONFIG.backpressure);
-
-        let (shard, events) = builder.build();
-
-        shard.start().await?;
 
         let cache = Arc::new(
             InMemoryCache::builder()
@@ -129,7 +125,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
         let shard_status = Arc::new(state::Shard {
             id: shard_id,
-            shard,
+            sender: shard.sender(),
             events: broadcast_tx.clone(),
             ready,
             guilds: guild_cache,
@@ -139,14 +135,11 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         // and handle state updates for the guild cache
         // and set the ready event if received
         tokio::spawn(dispatch::events(
-            events,
+            shard,
             shard_status.clone(),
             shard_id,
             broadcast_tx,
         ));
-
-        // Track the shard latency in metrics
-        tokio::spawn(dispatch::shard_statistics(shard_status.clone()));
 
         shards.push(shard_status);
 

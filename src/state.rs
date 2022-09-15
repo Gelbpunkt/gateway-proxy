@@ -1,6 +1,6 @@
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use tokio::sync::{broadcast, Notify};
-use twilight_gateway::Shard as TwilightShard;
+use twilight_gateway::MessageSender;
 
 use std::{
     collections::HashMap,
@@ -54,8 +54,8 @@ impl Ready {
 pub struct Shard {
     /// ID of this shard.
     pub id: u64,
-    /// The [`TwilightShard`] this state is for.
-    pub shard: TwilightShard,
+    /// Sender for this shard.
+    pub sender: MessageSender,
     /// Handle for broadcasting events for this shard.
     pub events: broadcast::Sender<BroadcastMessage>,
     /// READY state manager for this shard.

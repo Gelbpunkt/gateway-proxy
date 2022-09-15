@@ -24,7 +24,6 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 use tracing::{debug, error, info, trace, warn};
-use twilight_gateway::shard::raw_message::Message as TwilightMessage;
 
 use std::{convert::Infallible, net::SocketAddr, pin::Pin, sync::Arc};
 
@@ -192,7 +191,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     let mut compress_tx = Some(compress_tx);
 
     // We need to know which shard this client is connected to in order to send messages to it
-    let mut shard_status = None;
+    let mut shard_sender = None;
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
@@ -218,10 +217,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
         #[cfg(not(feature = "simd-json"))]
         let payload = unsafe { String::from_utf8_unchecked(data) };
 
-        let deserializer = match GatewayEvent::from_json(&payload) {
-            Some(deserializer) => deserializer,
-            None => continue,
-        };
+        let Some(deserializer) = GatewayEvent::from_json(&payload) else { continue };
 
         match deserializer.op() {
             1 => {
@@ -232,7 +228,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 debug!("[{addr}] Client is identifying");
 
                 #[cfg(feature = "simd-json")]
-                let maybe_identify = simd_json::from_str(&mut payload);
+                let maybe_identify = unsafe { simd_json::from_str(&mut payload) };
                 #[cfg(not(feature = "simd-json"))]
                 let maybe_identify = serde_json::from_str(&payload);
 
@@ -273,7 +269,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
                 // The client is connected to this shard, so prepare for sending commands to it
                 let shard = state.shards[shard_id as usize].clone();
-                shard_status = Some(shard.clone());
+                shard_sender = Some(shard.sender.clone());
 
                 if let Some(sender) = compress_tx.take() {
                     shard_forward_task = Some(tokio::spawn(forward_shard(
@@ -291,7 +287,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 debug!("[{addr}] Client is resuming");
 
                 #[cfg(feature = "simd-json")]
-                let maybe_resume = simd_json::from_str(&mut payload);
+                let maybe_resume = unsafe { simd_json::from_str(&mut payload) };
                 #[cfg(not(feature = "simd-json"))]
                 let maybe_resume = serde_json::from_str(&payload);
 
@@ -334,12 +330,9 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 }
             }
             _ => {
-                if let Some(shard_status) = &shard_status {
+                if let Some(sender) = &shard_sender {
                     trace!("[{addr}] Sending {payload:?} to Discord directly");
-                    let _res = shard_status
-                        .shard
-                        .send(TwilightMessage::Text(payload))
-                        .await;
+                    let _res = sender.send(payload);
                 } else {
                     warn!("[{addr}] Client attempted to send payload before IDENTIFY",);
                 }
