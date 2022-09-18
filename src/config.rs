@@ -97,7 +97,11 @@ impl From<Cache> for EventTypeFlags {
         if cache.channels {
             flags |= EventTypeFlags::CHANNEL_CREATE
                 | EventTypeFlags::CHANNEL_DELETE
-                | EventTypeFlags::CHANNEL_UPDATE;
+                | EventTypeFlags::CHANNEL_UPDATE
+                | EventTypeFlags::THREAD_CREATE
+                | EventTypeFlags::THREAD_DELETE
+                | EventTypeFlags::THREAD_LIST_SYNC
+                | EventTypeFlags::THREAD_UPDATE;
         }
 
         if cache.presences {

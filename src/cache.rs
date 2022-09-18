@@ -7,7 +7,7 @@ use serde_json::Value as OwnedValue;
 use simd_json::OwnedValue;
 use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats, UpdateCache};
 use twilight_model::{
-    channel::{message::Sticker, Channel, StageInstance},
+    channel::{message::Sticker, Channel, StageInstance, ChannelType},
     gateway::{
         payload::incoming::{GuildCreate, GuildDelete},
         presence::{Presence, UserOrId},
@@ -104,11 +104,17 @@ impl Guilds {
                     .filter_map(|channel_id| {
                         let channel = self.0.channel(*channel_id)?;
 
-                        if channel.value().thread_metadata.is_some() {
-                            None
-                        } else {
+                        if matches!(
+                            channel.kind,
+                            ChannelType::GuildNewsThread
+                                | ChannelType::GuildPrivateThread
+                                | ChannelType::GuildPublicThread
+                        ) {
                             Some(channel.value().clone())
+                        } else {
+                            None
                         }
+
                     })
                     .collect()
             })
