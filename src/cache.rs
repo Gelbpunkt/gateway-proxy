@@ -110,9 +110,9 @@ impl Guilds {
                                 | ChannelType::GuildPrivateThread
                                 | ChannelType::GuildPublicThread
                         ) {
-                            Some(channel.value().clone())
-                        } else {
                             None
+                        } else {
+                            Some(channel.value().clone())
                         }
 
                     })
@@ -298,7 +298,12 @@ impl Guilds {
                     .filter_map(|channel_id| {
                         let channel = self.0.channel(*channel_id)?;
 
-                        if channel.value().thread_metadata.is_some() {
+                        if matches!(
+                            channel.kind,
+                            ChannelType::GuildNewsThread
+                                | ChannelType::GuildPrivateThread
+                                | ChannelType::GuildPublicThread
+                        ) {
                             Some(channel.value().clone())
                         } else {
                             None
