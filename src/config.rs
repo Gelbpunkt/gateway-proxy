@@ -38,6 +38,7 @@ pub struct Config {
     pub backpressure: usize,
     #[serde(default)]
     pub twilight_http_proxy: Option<String>,
+    pub externally_accessible_url: String,
     #[serde(default)]
     pub cache: Cache,
 }
