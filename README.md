@@ -34,6 +34,7 @@ Create a file `config.json` and fill in these fields as you wish:
   },
   "status": "idle",
   "backpressure": 100,
+  "externally_accessible_url": "ws://localhost:7878",
   "cache": {
     "channels": false,
     "presences": false,

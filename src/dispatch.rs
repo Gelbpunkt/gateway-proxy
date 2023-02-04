@@ -88,7 +88,7 @@ pub async fn events(
                     let mut ready: Ready =
                         unsafe { simd_json::from_str(&mut payload.clone()).unwrap() };
                     #[cfg(not(feature = "simd-json"))]
-                    let mut ready: Ready = serde_json::from_str(&mut payload).unwrap();
+                    let mut ready: Ready = serde_json::from_str(&payload).unwrap();
 
                     // Clear the guilds
                     if let Some(guilds) = ready.d.get_mut("guilds") {
@@ -96,6 +96,12 @@ pub async fn events(
                             arr.clear();
                         }
                     }
+
+                    // Override resume_gateway_url with the external URI of the proxy
+                    ready.d.insert(
+                        String::from("resume_gateway_url"),
+                        CONFIG.externally_accessible_url.clone().into(),
+                    );
 
                     // We don't care if it was already set
                     // since this data is timeless
