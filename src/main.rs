@@ -159,12 +159,15 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+fn main() {
     unsafe { set_os_handlers() };
 
-    tokio::runtime::Builder::new_multi_thread()
+    if let Err(e) = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
         .block_on(run())
+    {
+        eprintln!("Fatal error: {e}");
+    }
 }
