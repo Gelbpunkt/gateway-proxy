@@ -52,7 +52,7 @@ twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "
 [features]
 default = ["simd"]
 simd = ["flate2/zlib-ng", "simd-json", "twilight-gateway/zlib-simd", "twilight-gateway/simd-json", "twilight-http/simd-json"]
-no-simd = ["flate2/zlib", "serde_json"]
+no-simd = ["flate2/zlib", "serde_json", "twilight-gateway/zlib-stock"]
 
 [profile.release]
 codegen-units = 1
