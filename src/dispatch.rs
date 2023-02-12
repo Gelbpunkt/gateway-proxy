@@ -39,19 +39,12 @@ pub async fn events(
     loop {
         // Update metrics if the last update was more than 10s ago
         let now = Instant::now();
-        let info = shard.status();
 
         if now.duration_since(last_metrics_update) > TEN_SECONDS {
             let latencies = shard.latency().recent();
+            let info = shard.status();
             update_shard_statistics(&shard_id_str, &shard_state, info, latencies);
             last_metrics_update = now;
-        }
-
-        // If we are disconnected and need to reconnect, set not ready
-        if info.is_disconnected() {
-            debug!("[Shard {shard_id}] Reconnecting");
-            shard_state.ready.set_not_ready();
-            is_ready = false;
         }
 
         let msg = match shard.next_message().await {
@@ -127,6 +120,10 @@ pub async fn events(
             {
                 shard_state.guilds.update(Event::from(event));
             }
+        } else if let Message::Close(_) = msg {
+            debug!("[Shard {shard_id}] Reconnecting");
+            shard_state.ready.set_not_ready();
+            is_ready = false;
         }
     }
 }
