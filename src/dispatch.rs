@@ -102,28 +102,34 @@ pub async fn events(
                     is_ready = true;
                 } else if event_name == "RESUMED" {
                     is_ready = true;
-                } else if op.0 == 0 {
+                } else if op.0 == 0 && is_ready {
                     // We only want to relay dispatchable events, not RESUMEs and not READY
                     // because we fake a READY event
                     let payload_copy = payload.clone();
                     trace!("[Shard {shard_id}] Sending payload to clients: {payload_copy:?}",);
 
-                    if is_ready {
-                        let _res = broadcast_tx.send((payload_copy, sequence));
-                    }
+                    let _res = broadcast_tx.send((payload_copy, sequence));
                 }
             }
 
-            // Parse the event
-            if let Ok(Some(TwilightGatewayEvent::Dispatch(_, event))) =
-                parse(payload, event_type_flags)
-            {
-                shard_state.guilds.update(Event::from(event));
+            if let Ok(Some(event)) = parse(payload, event_type_flags) {
+                match event {
+                    TwilightGatewayEvent::Dispatch(_, event) => {
+                        shard_state.guilds.update(Event::from(event))
+                    }
+                    TwilightGatewayEvent::InvalidateSession(can_resume) => {
+                        debug!("[Shard {shard_id}] Session invalidated, resumable: {can_resume}");
+                        if !can_resume {
+                            // We can only reset the READY state if we know that we will get a new READY,
+                            // which is the case if we can not resume.
+                            shard_state.ready.set_not_ready();
+                        }
+                        // Suspend sending events to clients until READY or RESUMED are received.
+                        is_ready = false;
+                    }
+                    _ => {}
+                }
             }
-        } else if let Message::Close(_) = msg {
-            debug!("[Shard {shard_id}] Reconnecting");
-            shard_state.ready.set_not_ready();
-            is_ready = false;
         }
     }
 }

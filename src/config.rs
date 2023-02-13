@@ -79,7 +79,8 @@ impl From<Cache> for EventTypeFlags {
         let mut flags = EventTypeFlags::GUILD_CREATE
             | EventTypeFlags::GUILD_DELETE
             | EventTypeFlags::GUILD_UPDATE
-            | EventTypeFlags::READY;
+            | EventTypeFlags::READY
+            | EventTypeFlags::GATEWAY_INVALIDATE_SESSION;
 
         if cache.members || cache.current_member {
             flags |= EventTypeFlags::MEMBER_ADD
