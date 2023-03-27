@@ -13,7 +13,7 @@ use tokio::sync::broadcast;
 use tracing::{debug, error, info};
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::{Config, Shard, ShardId};
+use twilight_gateway::{Config, ConfigBuilder, Shard, ShardId};
 use twilight_gateway_queue::{LargeBotQueue, Queue};
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
@@ -92,16 +92,18 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     info!("Creating shards {shard_start} to {shard_end_inclusive} of {shard_count} total",);
 
+    let config = Config::builder(CONFIG.token.clone(), CONFIG.intents)
+        .queue(queue)
+        .event_types(CONFIG.cache.clone().into())
+        .build();
+
     for shard_id in shard_start..shard_end {
-        let mut builder = Config::builder(CONFIG.token.clone(), CONFIG.intents)
-            .queue(queue.clone())
-            .event_types(CONFIG.cache.clone().into());
+        let mut builder = ConfigBuilder::with_config(config.clone());
 
         if let Some(mut activity) = CONFIG.activity.clone() {
             // Replace {{shard}} with the actual ID
             activity.name = activity.name.replace("{{shard}}", &shard_id.to_string());
-            // Will only error if activity are empty, so we can unwrap
-
+            // Will only error if activities are empty, so we can unwrap
             builder = builder.presence(
                 UpdatePresencePayload::new(vec![activity], false, None, CONFIG.status).unwrap(),
             );
