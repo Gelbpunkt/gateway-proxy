@@ -1,8 +1,9 @@
-#![feature(option_result_contains, once_cell)]
+#![feature(lazy_cell)]
 #![deny(clippy::pedantic)]
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
     clippy::cast_ptr_alignment,
     clippy::struct_excessive_bools
 )]

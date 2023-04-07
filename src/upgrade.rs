@@ -1,4 +1,4 @@
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use hyper::{
     header::{
         HeaderValue, CONNECTION, SEC_WEBSOCKET_ACCEPT, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_VERSION,
@@ -37,12 +37,7 @@ pub async fn server(
 
     let mut response = Response::new(Body::empty());
 
-    if !request
-        .headers()
-        .get(UPGRADE)
-        .and_then(|v| v.to_str().ok())
-        .contains(&"websocket")
-    {
+    if request.headers().get(UPGRADE).and_then(|v| v.to_str().ok()) != Some("websocket") {
         *response.status_mut() = StatusCode::BAD_REQUEST;
         return Ok(response);
     }

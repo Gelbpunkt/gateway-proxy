@@ -115,7 +115,7 @@ pub async fn events(
             if let Ok(Some(event)) = parse(payload, event_type_flags) {
                 match event {
                     TwilightGatewayEvent::Dispatch(_, event) => {
-                        shard_state.guilds.update(Event::from(event))
+                        shard_state.guilds.update(Event::from(event));
                     }
                     TwilightGatewayEvent::InvalidateSession(can_resume) => {
                         debug!("[Shard {shard_id}] Session invalidated, resumable: {can_resume}");

@@ -93,7 +93,7 @@ where
         sink.send(Message::Text(HELLO.to_string())).await?;
     }
 
-    if compress_rx.await.contains(&Some(true)) {
+    if compress_rx.await != Ok(Some(true)) {
         use_zlib = true;
     }
 
