@@ -15,7 +15,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-          components: clippy
+          components: clippy, rust-src
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
