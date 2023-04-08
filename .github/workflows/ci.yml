@@ -17,6 +17,7 @@ jobs:
           toolchain: nightly
           profile: minimal
           override: true
+          components: clippy
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
@@ -41,6 +42,7 @@ jobs:
           toolchain: nightly
           profile: minimal
           override: true
+          components: rustfmt
 
       - name: Add problem matchers
         run: echo "::add-matcher::.github/rust.json"
