@@ -22,7 +22,7 @@ const TEN_SECONDS: Duration = Duration::from_secs(10);
 pub async fn events(
     mut shard: Shard,
     shard_state: Arc<ShardState>,
-    shard_id: u64,
+    shard_id: u32,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
 ) {
     // This method only wants to relay events while the shard is in a READY state

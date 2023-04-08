@@ -1283,7 +1283,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "bitflags",
  "dashmap",
@@ -1294,7 +1294,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "bitflags",
  "flate2",
@@ -1315,7 +1315,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "tokio",
  "tracing",
@@ -1325,7 +1325,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "hyper",
  "hyper-rustls",
@@ -1344,10 +1344,9 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "futures-util",
- "http",
  "tokio",
  "tracing",
 ]
@@ -1355,7 +1354,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "bitflags",
  "serde",
@@ -1368,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.15.0"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#fbb64207d5c78240efe88644eb2dbad0fc7e4380"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=15-custom#52d402d4d2da183b51ea2d61ee70c491e1dd5419"
 dependencies = [
  "twilight-model",
 ]

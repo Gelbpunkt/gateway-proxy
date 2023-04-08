@@ -18,7 +18,7 @@ pub struct Resume {
 pub struct IdentifyInfo {
     #[serde(default)]
     pub compress: Option<bool>,
-    pub shard: [u64; 2],
+    pub shard: [u32; 2],
     pub token: String,
 }
 
