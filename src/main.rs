@@ -1,11 +1,12 @@
 #![feature(lazy_cell)]
-#![deny(clippy::pedantic)]
+#![deny(clippy::pedantic, clippy::nursery)]
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::cast_precision_loss,
     clippy::cast_ptr_alignment,
-    clippy::struct_excessive_bools
+    clippy::struct_excessive_bools,
+    clippy::option_if_let_else, // I disagree with this lint
 )]
 use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use metrics_exporter_prometheus::PrometheusBuilder;
@@ -49,6 +50,7 @@ unsafe fn set_os_handlers() {
     signal(SIGTERM, handler as extern "C" fn(_) as sighandler_t);
 }
 
+#[allow(clippy::cognitive_complexity)]
 async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let level_filter = LevelFilter::from_str(&CONFIG.log_level).unwrap_or(LevelFilter::INFO);
     let fmt_layer = tracing_subscriber::fmt::layer();

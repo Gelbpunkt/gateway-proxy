@@ -77,7 +77,7 @@ async fn sink_from_queue<S>(
     mut sink: S,
 ) -> Result<(), Error>
 where
-    S: Sink<Message, Error = Error> + Unpin,
+    S: Sink<Message, Error = Error> + Unpin + Send,
 {
     // Initialize a zlib encoder with similar settings to Discord's
     let mut compress = Compress::new(Compression::fast(), true);
