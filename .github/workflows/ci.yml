@@ -1,0 +1,49 @@
+name: Check build
+
+on: [push, pull_request]
+
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Add problem matchers
+        run: echo "::add-matcher::.github/rust.json"
+
+      - name: Run clippy
+        run: cargo clippy --all-features
+
+  rustfmt:
+    name: Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Add problem matchers
+        run: echo "::add-matcher::.github/rust.json"
+
+      - name: Run cargo fmt
+        run: cargo fmt -- --check
