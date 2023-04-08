@@ -179,6 +179,7 @@ async fn forward_shard(
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     addr: SocketAddr,
     stream: S,
