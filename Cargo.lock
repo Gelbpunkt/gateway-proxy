@@ -252,6 +252,7 @@ name = "gateway-proxy"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "dashmap",
  "flate2",
  "futures-util",
  "halfbrown",
@@ -1137,7 +1138,19 @@ dependencies = [
  "num_cpus",
  "pin-project-lite",
  "socket2",
+ "tokio-macros",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "630bdcf245f78637c13ec01ffae6187cca34625e8c63150d424b59e55af2675e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

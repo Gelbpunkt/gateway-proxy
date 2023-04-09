@@ -3,6 +3,7 @@ use serde::Deserialize;
 use serde_json::Value as OwnedValue;
 #[cfg(feature = "simd-json")]
 use simd_json::OwnedValue;
+use twilight_model::gateway::payload::outgoing::update_voice_state::UpdateVoiceStateInfo;
 
 #[derive(Deserialize)]
 pub struct Identify {
@@ -12,6 +13,11 @@ pub struct Identify {
 #[derive(Deserialize)]
 pub struct Resume {
     pub d: ResumeInfo,
+}
+
+#[derive(Deserialize)]
+pub struct VoiceStateUpdate {
+    pub d: UpdateVoiceStateInfo,
 }
 
 #[derive(Deserialize)]

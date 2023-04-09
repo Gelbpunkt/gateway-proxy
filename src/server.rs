@@ -28,10 +28,10 @@ use tracing::{debug, error, info, trace, warn};
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 
 use crate::{
-    cache::Event,
+    cache::{Event, Payload},
     config::CONFIG,
     deserializer::{GatewayEvent, SequenceInfo},
-    model::{Identify, Resume},
+    model::{Identify, Resume, VoiceStateUpdate},
     state::{Session, Shard, State},
     upgrade,
 };
@@ -118,6 +118,7 @@ async fn forward_shard(
     session_id: String,
     shard_status: Arc<Shard>,
     stream_writer: UnboundedSender<Message>,
+    mut client_responses: UnboundedReceiver<Payload>,
     send_guilds: bool,
     mut seq: usize,
 ) {
@@ -133,7 +134,7 @@ async fn forward_shard(
     if send_guilds {
         // Get a fake ready payload to send to the client
         let mut ready_payload = shard_status
-            .guilds
+            .cache
             .get_ready_payload(ready_payload, &mut seq);
 
         // Overwrite the session ID in the READY
@@ -147,7 +148,7 @@ async fn forward_shard(
         };
 
         // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
-        for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
+        for payload in shard_status.cache.get_guild_payloads(&mut seq) {
             if let Ok(serialized) = to_string(&payload) {
                 trace!(
                     "[Shard {shard_id}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
@@ -163,18 +164,38 @@ async fn forward_shard(
     let mut buffer = Buffer::new();
 
     loop {
-        let res = event_receiver.recv().await;
+        tokio::select! {
+            res = event_receiver.recv() => {
+                if let Ok((mut payload, sequence)) = res {
+                    // Overwrite the sequence number
+                    if let Some(SequenceInfo(_, sequence_range)) = sequence {
+                        seq += 1;
+                        payload.replace_range(sequence_range, buffer.format(seq));
+                    }
 
-        if let Ok((mut payload, sequence)) = res {
-            // Overwrite the sequence number
-            if let Some(SequenceInfo(_, sequence_range)) = sequence {
-                seq += 1;
-                payload.replace_range(sequence_range, buffer.format(seq));
+                    let _res = stream_writer.send(Message::Text(payload));
+                } else if let Err(RecvError::Lagged(amt)) = res {
+                    warn!("[Shard {shard_id}] Client is {amt} events behind!",);
+                }
+            },
+            maybe_payload = client_responses.recv() => {
+                if let Some(mut payload) = maybe_payload {
+                    seq += 1;
+                    payload.s = seq;
+
+                    match to_string(&payload) {
+                        Ok(payload) => {
+                            let _res = stream_writer.send(Message::Text(payload));
+                        },
+                        Err(e) => {
+                            warn!("Failed to serialize payload for client due to {e:?}");
+                        }
+                    }
+                } else {
+                    warn!("Client response stream has been closed");
+                    break;
+                }
             }
-
-            let _res = stream_writer.send(Message::Text(payload));
-        } else if let Err(RecvError::Lagged(amt)) = res {
-            warn!("[Shard {shard_id}] Client is {amt} events behind!",);
         }
     }
 }
@@ -190,9 +211,6 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     // contained a compression request
     let (compress_tx, compress_rx) = oneshot::channel();
     let mut compress_tx = Some(compress_tx);
-
-    // We need to know which shard this client is connected to in order to send messages to it
-    let mut shard_sender = None;
 
     let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
 
@@ -210,6 +228,8 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     ));
 
     let mut shard_forward_task = None;
+    let mut client_response_sender = None;
+    let mut shard: Option<Arc<Shard>> = None;
 
     while let Some(Ok(msg)) = stream.next().await {
         let data = msg.into_data();
@@ -269,19 +289,67 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 let session_id = state.create_session(session);
 
                 // The client is connected to this shard, so prepare for sending commands to it
-                let shard = state.shards[shard_id as usize].clone();
-                shard_sender = Some(shard.sender.clone());
+                let local_shard = state.shards[shard_id as usize].clone();
+                shard = Some(local_shard.clone());
 
                 if let Some(sender) = compress_tx.take() {
+                    let (tx, rx) = unbounded_channel();
+
                     shard_forward_task = Some(tokio::spawn(forward_shard(
                         session_id,
-                        shard,
+                        local_shard,
                         stream_writer.clone(),
+                        rx,
                         true,
                         0,
                     )));
 
+                    client_response_sender = Some(tx);
+
                     let _res = sender.send(identify.d.compress);
+                }
+            }
+            4 => {
+                debug!("[{addr}] Client is sending a voice state update");
+
+                let Some(shard) = &shard else {
+                    warn!("Client sent voice state update before identifying or resuming");
+                    continue;
+                };
+
+                #[cfg(feature = "simd-json")]
+                let maybe_voice_state_update = unsafe { simd_json::from_str(&mut payload) };
+                #[cfg(not(feature = "simd-json"))]
+                let maybe_voice_state_update = serde_json::from_str(&payload);
+
+                let voice_state_update: VoiceStateUpdate = match maybe_voice_state_update {
+                    Ok(voice_state_update) => voice_state_update,
+                    Err(e) => {
+                        warn!("[{addr}] Invalid voice state update payload: {e:?}");
+                        continue;
+                    }
+                };
+
+                // Check if this can be retrieved from cache
+                if let Some((voice_state_update, voice_server_update)) =
+                    voice_state_update.d.channel_id.and_then(|channel_id| {
+                        shard.cache.get_voice_state_update_response(
+                            voice_state_update.d.guild_id,
+                            channel_id,
+                        )
+                    })
+                {
+                    if let Some(sender) = &client_response_sender {
+                        debug!("Sending cached voice state update and voice server update");
+
+                        let _ = sender.send(voice_state_update);
+                        let _ = sender.send(voice_server_update);
+                    } else {
+                        error!("Client response sender has not been initialized, this should be impossible");
+                    }
+                } else {
+                    trace!("[{addr}] Sending {payload:?} to Discord directly");
+                    let _res = shard.sender.send(payload);
                 }
             }
             6 => {
@@ -311,16 +379,22 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                     let session_id = resume.d.session_id;
                     debug!("[{addr}] Successfully resuming session {session_id}",);
 
-                    let shard = state.shards[session.shard_id as usize].clone();
+                    let local_shard = state.shards[session.shard_id as usize].clone();
+                    shard = Some(local_shard.clone());
 
                     if let Some(sender) = compress_tx.take() {
+                        let (tx, rx) = unbounded_channel();
+
                         shard_forward_task = Some(tokio::spawn(forward_shard(
                             session_id,
-                            shard.clone(),
+                            local_shard,
                             stream_writer.clone(),
+                            rx,
                             false,
                             resume.d.seq,
                         )));
+
+                        client_response_sender = Some(tx);
 
                         let _res = sender.send(session.compress);
                     } else {
@@ -331,9 +405,9 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 }
             }
             _ => {
-                if let Some(sender) = &shard_sender {
+                if let Some(shard) = &shard {
                     trace!("[{addr}] Sending {payload:?} to Discord directly");
-                    let _res = sender.send(payload);
+                    let _res = shard.sender.send(payload);
                 } else {
                     warn!("[{addr}] Client attempted to send payload before IDENTIFY",);
                 }

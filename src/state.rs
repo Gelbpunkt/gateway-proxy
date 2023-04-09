@@ -60,8 +60,8 @@ pub struct Shard {
     pub events: broadcast::Sender<BroadcastMessage>,
     /// READY state manager for this shard.
     pub ready: Ready,
-    /// Cache for guilds on this shard.
-    pub guilds: cache::Guilds,
+    /// Cache for this shard.
+    pub cache: cache::Cache,
 }
 
 /// A session initiated by a client.

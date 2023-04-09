@@ -124,7 +124,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
                 .message_cache_size(0)
                 .build(),
         );
-        let guild_cache = cache::Guilds::new(cache.clone(), shard_id);
+        let cache = cache::Cache::new(cache.clone());
 
         let ready = state::Ready::new();
 
@@ -133,7 +133,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
             sender: shard.sender(),
             events: broadcast_tx.clone(),
             ready,
-            guilds: guild_cache,
+            cache,
         });
 
         // Now pipe the events into the broadcast

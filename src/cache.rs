@@ -1,3 +1,4 @@
+use dashmap::DashMap;
 #[cfg(feature = "simd-json")]
 use halfbrown::hashmap;
 use serde::Serialize;
@@ -5,17 +6,17 @@ use serde::Serialize;
 use serde_json::Value as OwnedValue;
 #[cfg(feature = "simd-json")]
 use simd_json::OwnedValue;
-use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats, UpdateCache};
+use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats};
 use twilight_model::{
     channel::{message::Sticker, Channel, StageInstance},
     gateway::{
-        payload::incoming::{GuildCreate, GuildDelete},
+        payload::incoming::{GuildCreate, GuildDelete, VoiceServerUpdate},
         presence::{Presence, UserOrId},
         OpCode,
     },
     guild::{Emoji, Guild, Member, Role},
     id::{
-        marker::{GuildMarker, UserMarker},
+        marker::{ChannelMarker, GuildMarker, UserMarker},
         Id,
     },
     voice::VoiceState,
@@ -39,28 +40,129 @@ pub enum Event {
     Ready(JsonObject),
     GuildCreate(Box<GuildCreate>),
     GuildDelete(GuildDelete),
+    VoiceStateUpdate(Box<VoiceState>),
+    VoiceServerUpdate(VoiceServerUpdate),
 }
 
-pub struct Guilds(Arc<InMemoryCache>, u32);
+pub struct Cache {
+    // This is global cache
+    inner: Arc<InMemoryCache>,
+    // This can be shard-local since it should only concern the guilds on this shard
+    voice_servers: DashMap<Id<GuildMarker>, VoiceServerUpdate>,
+}
 
-impl Guilds {
-    pub fn new(cache: Arc<InMemoryCache>, shard_id: u32) -> Self {
-        Self(cache, shard_id)
+impl Cache {
+    pub fn new(cache: Arc<InMemoryCache>) -> Self {
+        Self {
+            inner: cache,
+            voice_servers: DashMap::new(),
+        }
     }
 
-    pub fn update(&self, value: impl UpdateCache) {
-        self.0.update(value);
+    pub fn update(&self, value: twilight_gateway::Event) {
+        // The generic cache doesn't cache VoiceServerUpdates - it is a terrible idea
+        // but we have to do it, in order to to reuse voice connections.
+        if let twilight_gateway::Event::VoiceServerUpdate(voice_server) = value {
+            self.voice_servers
+                .insert(voice_server.guild_id, voice_server);
+        } else {
+            // If we are disconnecting from a voice channel or changing channel, delete the voice server cache
+            if let twilight_gateway::Event::VoiceStateUpdate(voice_state) = &value {
+                if let Some(guild_id) = voice_state.guild_id {
+                    if let Some(user_id) = self.inner.current_user().map(|u| u.id) {
+                        if let Some(cached) = self.inner.voice_state(user_id, guild_id) {
+                            if voice_state
+                                .channel_id
+                                .map_or(true, |channel_id| channel_id != cached.channel_id())
+                                && user_id == voice_state.user_id
+                            {
+                                self.voice_servers.remove(&guild_id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update the generic cache
+            self.inner.update(value);
+        }
     }
 
     pub fn stats(&self) -> InMemoryCacheStats {
-        self.0.stats()
+        self.inner.stats()
+    }
+
+    pub fn my_voice_state(&self, guild_id: Id<GuildMarker>) -> Option<VoiceState> {
+        if let Some(user) = self.inner.current_user() {
+            if let Some(voice_state) = self.inner.voice_state(user.id, guild_id) {
+                let state = VoiceState {
+                    channel_id: Some(voice_state.channel_id()),
+                    deaf: voice_state.deaf(),
+                    guild_id: Some(voice_state.guild_id()),
+                    member: self.member(guild_id, user.id),
+                    mute: voice_state.mute(),
+                    self_deaf: voice_state.self_deaf(),
+                    self_mute: voice_state.self_mute(),
+                    self_stream: voice_state.self_stream(),
+                    self_video: voice_state.self_video(),
+                    session_id: voice_state.session_id().to_string(),
+                    suppress: voice_state.suppress(),
+                    user_id: voice_state.user_id(),
+                    request_to_speak_timestamp: voice_state.request_to_speak_timestamp(),
+                };
+
+                return Some(state);
+            }
+        }
+
+        None
+    }
+
+    pub fn get_voice_server(&self, guild_id: Id<GuildMarker>) -> Option<VoiceServerUpdate> {
+        self.voice_servers.get(&guild_id).map(|r| r.clone())
+    }
+
+    pub fn get_voice_state_update_response(
+        &self,
+        guild_id: Id<GuildMarker>,
+        channel_id: Id<ChannelMarker>,
+    ) -> Option<(Payload, Payload)> {
+        // If the client is connecting to a channel it is already connected to, return cached info
+        if let Some(user_id) = self.inner.current_user().map(|u| u.id) {
+            if let Some(cached) = self.inner.voice_state(user_id, guild_id) {
+                if channel_id == cached.channel_id() {
+                    if let (Some(voice_state), Some(voice_server)) = (
+                        self.my_voice_state(guild_id),
+                        self.get_voice_server(guild_id),
+                    ) {
+                        let voice_state_update = Payload {
+                            d: Event::VoiceStateUpdate(Box::new(voice_state)),
+                            op: OpCode::Dispatch,
+                            t: String::from("VOICE_STATE_UPDATE"),
+                            s: 0,
+                        };
+
+                        let voice_server_update = Payload {
+                            d: Event::VoiceServerUpdate(voice_server),
+                            op: OpCode::Dispatch,
+                            t: String::from("VOICE_SERVER_UPDATE"),
+                            s: 0,
+                        };
+
+                        return Some((voice_state_update, voice_server_update));
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     pub fn get_ready_payload(&self, mut ready: JsonObject, sequence: &mut usize) -> Payload {
         *sequence += 1;
 
         let unavailable_guilds = self
-            .0
+            .inner
             .iter()
             .guilds()
             .map(|guild| {
@@ -96,13 +198,13 @@ impl Guilds {
     }
 
     fn channels_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Channel> {
-        self.0
+        self.inner
             .guild_channels(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|channel_id| {
-                        let channel = self.0.channel(*channel_id)?;
+                        let channel = self.inner.channel(*channel_id)?;
 
                         if channel.kind.is_thread() {
                             None
@@ -116,13 +218,13 @@ impl Guilds {
     }
 
     fn presences_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Presence> {
-        self.0
+        self.inner
             .guild_presences(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|user_id| {
-                        let presence = self.0.presence(guild_id, *user_id)?;
+                        let presence = self.inner.presence(guild_id, *user_id)?;
 
                         Some(Presence {
                             activities: presence.activities().to_vec(),
@@ -140,13 +242,13 @@ impl Guilds {
     }
 
     fn emojis_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Emoji> {
-        self.0
+        self.inner
             .guild_emojis(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|emoji_id| {
-                        let emoji = self.0.emoji(*emoji_id)?;
+                        let emoji = self.inner.emoji(*emoji_id)?;
 
                         Some(Emoji {
                             animated: emoji.animated(),
@@ -156,9 +258,9 @@ impl Guilds {
                             name: emoji.name().to_string(),
                             require_colons: emoji.require_colons(),
                             roles: emoji.roles().to_vec(),
-                            user: emoji
-                                .user_id()
-                                .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
+                            user: emoji.user_id().and_then(|id| {
+                                self.inner.user(id).map(|user| user.value().clone())
+                            }),
                         })
                     })
                     .collect()
@@ -167,7 +269,7 @@ impl Guilds {
     }
 
     fn member(&self, guild_id: Id<GuildMarker>, user_id: Id<UserMarker>) -> Option<Member> {
-        let member = self.0.member(guild_id, user_id)?;
+        let member = self.inner.member(guild_id, user_id)?;
 
         Some(Member {
             avatar: member.avatar(),
@@ -180,12 +282,12 @@ impl Guilds {
             pending: member.pending(),
             premium_since: member.premium_since(),
             roles: member.roles().to_vec(),
-            user: self.0.user(member.user_id())?.value().clone(),
+            user: self.inner.user(member.user_id())?.value().clone(),
         })
     }
 
     fn members_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Member> {
-        self.0
+        self.inner
             .guild_members(guild_id)
             .map(|reference| {
                 reference
@@ -197,25 +299,33 @@ impl Guilds {
     }
 
     fn roles_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Role> {
-        self.0
+        self.inner
             .guild_roles(guild_id)
             .map(|reference| {
                 reference
                     .iter()
-                    .filter_map(|role_id| Some(self.0.role(*role_id)?.value().resource().clone()))
+                    .filter_map(|role_id| {
+                        Some(self.inner.role(*role_id)?.value().resource().clone())
+                    })
                     .collect()
             })
             .unwrap_or_default()
     }
 
     fn stage_instances_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<StageInstance> {
-        self.0
+        self.inner
             .guild_stage_instances(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|stage_id| {
-                        Some(self.0.stage_instance(*stage_id)?.value().resource().clone())
+                        Some(
+                            self.inner
+                                .stage_instance(*stage_id)?
+                                .value()
+                                .resource()
+                                .clone(),
+                        )
                     })
                     .collect()
             })
@@ -223,13 +333,13 @@ impl Guilds {
     }
 
     fn stickers_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Sticker> {
-        self.0
+        self.inner
             .guild_stickers(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|sticker_id| {
-                        let sticker = self.0.sticker(*sticker_id)?;
+                        let sticker = self.inner.sticker(*sticker_id)?;
 
                         Some(Sticker {
                             available: sticker.available(),
@@ -242,9 +352,9 @@ impl Guilds {
                             pack_id: sticker.pack_id(),
                             sort_value: sticker.sort_value(),
                             tags: sticker.tags().to_string(),
-                            user: sticker
-                                .user_id()
-                                .and_then(|id| self.0.user(id).map(|user| user.value().clone())),
+                            user: sticker.user_id().and_then(|id| {
+                                self.inner.user(id).map(|user| user.value().clone())
+                            }),
                         })
                     })
                     .collect()
@@ -253,13 +363,13 @@ impl Guilds {
     }
 
     fn voice_states_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<VoiceState> {
-        self.0
+        self.inner
             .guild_voice_states(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|user_id| {
-                        let voice_state = self.0.voice_state(*user_id, guild_id)?;
+                        let voice_state = self.inner.voice_state(*user_id, guild_id)?;
 
                         Some(VoiceState {
                             channel_id: Some(voice_state.channel_id()),
@@ -283,13 +393,13 @@ impl Guilds {
     }
 
     fn threads_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<Channel> {
-        self.0
+        self.inner
             .guild_channels(guild_id)
             .map(|reference| {
                 reference
                     .iter()
                     .filter_map(|channel_id| {
-                        let channel = self.0.channel(*channel_id)?;
+                        let channel = self.inner.channel(*channel_id)?;
 
                         if channel.kind.is_thread() {
                             Some(channel.value().clone())
@@ -306,7 +416,7 @@ impl Guilds {
         &'a self,
         sequence: &'a mut usize,
     ) -> impl Iterator<Item = Payload> + 'a {
-        self.0.iter().guilds().map(move |guild| {
+        self.inner.iter().guilds().map(move |guild| {
             *sequence += 1;
 
             if guild.unavailable() {
