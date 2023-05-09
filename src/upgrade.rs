@@ -10,7 +10,7 @@ use hyper::{
 use ring::digest;
 use tracing::error;
 
-use std::{convert::Infallible, net::SocketAddr};
+use std::net::SocketAddr;
 
 use crate::{server::handle_client, state::State};
 
@@ -23,11 +23,7 @@ const GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 ///
 /// This method is one of two parts in the communication between server
 /// and client where zlib-stream compression may be requested.
-pub async fn server(
-    addr: SocketAddr,
-    mut request: Request<Body>,
-    state: State,
-) -> Result<Response<Body>, Infallible> {
+pub async fn server(addr: SocketAddr, mut request: Request<Body>, state: State) -> Response<Body> {
     let uri = request.uri();
     let query = uri.query();
 
@@ -39,7 +35,7 @@ pub async fn server(
 
     if request.headers().get(UPGRADE).and_then(|v| v.to_str().ok()) != Some("websocket") {
         *response.status_mut() = StatusCode::BAD_REQUEST;
-        return Ok(response);
+        return response;
     }
 
     if let Some(websocket_key) = request.headers().get(SEC_WEBSOCKET_KEY) {
@@ -77,5 +73,5 @@ pub async fn server(
         *response.status_mut() = StatusCode::BAD_REQUEST;
     }
 
-    Ok(response)
+    response
 }

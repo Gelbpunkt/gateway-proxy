@@ -76,6 +76,8 @@ docker run --rm -it -v /path/to/my/config.json:/config.json docker.io/gelbpunkt/
 
 Connecting is fairly simple, just hardcode the gateway URL in your client to `ws://localhost:7878`. Make sure not to ratelimit your connections on your end.
 
+If you have not configured a shard count manually, you can check the amount of shards you need to create on your client by requesting `http://localhost:7878/shard-count`. The endpoint returns the number of shards running as plaintext.
+
 **Important:** The proxy detects `zlib-stream` query parameters and `compress` fields in your `IDENTIFY` payloads and will encode packets if they are enabled, just like Discord. This comes with CPU overhead and is likely not desired in localhost networking. Make sure to disable this if so.
 
 ## Metrics

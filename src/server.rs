@@ -1,9 +1,9 @@
 use flate2::{Compress, Compression, FlushCompress, Status};
-use futures_util::{Future, Sink, SinkExt, StreamExt};
+use futures_util::{Sink, SinkExt, StreamExt};
 use hyper::{
     server::conn::AddrStream,
     service::{make_service_fn, service_fn},
-    Body, Request, Response, Server,
+    Body, Method, Request, Response, Server, StatusCode,
 };
 use itoa::Buffer;
 use metrics_exporter_prometheus::PrometheusHandle;
@@ -25,7 +25,7 @@ use tokio_tungstenite::{
 };
 use tracing::{debug, error, info, trace, warn};
 
-use std::{convert::Infallible, net::SocketAddr, pin::Pin, sync::Arc};
+use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 
 use crate::{
     cache::Event,
@@ -352,14 +352,32 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     Ok(())
 }
 
-fn handle_metrics(
-    handle: Arc<PrometheusHandle>,
-) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Infallible>> + Send>> {
-    Box::pin(async move {
-        Ok(Response::builder()
-            .body(Body::from(handle.render()))
-            .unwrap())
-    })
+async fn handler(
+    addr: SocketAddr,
+    request: Request<Body>,
+    state: State,
+    metrics: Arc<PrometheusHandle>,
+) -> Result<Response<Body>, Infallible> {
+    let response = match (request.method(), request.uri().path()) {
+        (&Method::GET, "/metrics") => Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::from(metrics.render()))
+            .unwrap(),
+        (&Method::GET, "/shard-count") => {
+            let mut buffer = itoa::Buffer::new();
+            let shard_count_str = buffer.format(state.shard_count);
+
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(shard_count_str.to_owned()))
+                .unwrap()
+        }
+        // Usually one would return a 404 here, but we will just provide the websocket
+        // upgrade for backwards compatibility.
+        _ => upgrade::server(addr, request, state).await,
+    };
+
+    Ok(response)
 }
 
 pub async fn run(
@@ -378,13 +396,7 @@ pub async fn run(
 
         async move {
             Ok::<_, Infallible>(service_fn(move |incoming: Request<Body>| {
-                if incoming.uri().path() == "/metrics" {
-                    // Reply with metrics on /metrics
-                    handle_metrics(metrics_handle.clone())
-                } else {
-                    // On anything else just provide the websocket server
-                    Box::pin(upgrade::server(addr, incoming, state.clone()))
-                }
+                handler(addr, incoming, state.clone(), metrics_handle.clone())
             }))
         }
     });
