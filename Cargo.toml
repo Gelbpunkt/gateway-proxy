@@ -28,7 +28,7 @@ serde_json = { version = "1", default-features = false, features = ["std"], opti
 simd-json = { version = "0.9", default-features = false, features = [
     "serde_impl"
 ], optional = true }
-tokio-tungstenite = { version = "0.18", default-features = false }
+tokio-tungstenite = { version = "0.19", default-features = false }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread"
 ] }
