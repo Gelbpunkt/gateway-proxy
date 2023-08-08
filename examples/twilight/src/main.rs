@@ -4,7 +4,7 @@ use futures_util::StreamExt;
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use twilight_gateway::{
     stream::{create_recommended, ShardEventStream},
-    Config, Intents,
+    Config, ConfigBuilder, Intents,
 };
 use twilight_gateway_queue::NoOpQueue;
 use twilight_http::Client;
@@ -27,15 +27,16 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
             .build(),
     );
 
-    let mut shards = create_recommended(&http, |_| {
-        Config::builder(token.clone(), Intents::all())
-            .proxy_url(String::from("ws://localhost:7878"))
-            .ratelimit_messages(false)
-            .queue(queue.clone())
-            .build()
-    })
-    .await?
-    .collect::<Vec<_>>();
+    let config = Config::builder(token.clone(), Intents::all())
+        .proxy_url(String::from("ws://localhost:7878"))
+        .ratelimit_messages(false)
+        .queue(queue.clone())
+        .build();
+    let config_callback = |_, builder: ConfigBuilder| builder.build();
+
+    let mut shards = create_recommended(&http, config, config_callback)
+        .await?
+        .collect::<Vec<_>>();
     let mut stream = ShardEventStream::new(shards.iter_mut());
 
     while let Some((shard, Ok(event))) = stream.next().await {
