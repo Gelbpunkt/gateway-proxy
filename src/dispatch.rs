@@ -64,7 +64,7 @@ pub async fn events(
         // later. Don't use simd_json::from_str on it because that will make the data useless.
         // Instead, clone it before mutating.
         if let Message::Text(payload) = msg {
-            let Some(event ) = GatewayEvent::from_json(&payload) else {
+            let Some(event) = GatewayEvent::from_json(&payload) else {
                 tracing::error!("Failed to deserialize gateway event");
                 continue;
             };

@@ -19,13 +19,10 @@ use tokio::{
         oneshot,
     },
 };
-use tokio_tungstenite::{
-    tungstenite::{protocol::Role, Error, Message},
-    WebSocketStream,
-};
+use tokio_websockets::{Error, Limits, Message, ServerBuilder};
 use tracing::{debug, error, info, trace, warn};
 
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use std::{convert::Infallible, future::ready, net::SocketAddr, sync::Arc};
 
 use crate::{
     cache::Event,
@@ -87,10 +84,10 @@ where
     if use_zlib {
         compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
 
-        sink.send(Message::Binary(compression_buffer.clone()))
+        sink.send(Message::binary(compression_buffer.as_slice()))
             .await?;
     } else {
-        sink.send(Message::Text(HELLO.to_string())).await?;
+        sink.send(Message::text(HELLO.to_string())).await?;
     }
 
     if compress_rx.await == Ok(Some(true)) {
@@ -102,9 +99,9 @@ where
 
         if use_zlib {
             compression_buffer.clear();
-            compress_full(&mut compress, &mut compression_buffer, &msg.into_data());
+            compress_full(&mut compress, &mut compression_buffer, &msg.into_payload());
 
-            sink.send(Message::Binary(compression_buffer.clone()))
+            sink.send(Message::binary(compression_buffer.as_slice()))
                 .await?;
         } else {
             sink.send(msg).await?;
@@ -143,7 +140,7 @@ async fn forward_shard(
 
         if let Ok(serialized) = to_string(&ready_payload) {
             debug!("[Shard {shard_id}] Sending newly created READY");
-            let _res = stream_writer.send(Message::Text(serialized));
+            let _res = stream_writer.send(Message::text(serialized));
         };
 
         // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
@@ -152,11 +149,11 @@ async fn forward_shard(
                 trace!(
                     "[Shard {shard_id}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
                 );
-                let _res = stream_writer.send(Message::Text(serialized));
+                let _res = stream_writer.send(Message::text(serialized));
             };
         }
     } else {
-        let _res = stream_writer.send(Message::Text(RESUMED.to_string()));
+        let _res = stream_writer.send(Message::text(RESUMED.to_string()));
     }
 
     // For formatting the sequence number as a string, reuse a buffer
@@ -172,7 +169,7 @@ async fn forward_shard(
                 payload.replace_range(sequence_range, buffer.format(seq));
             }
 
-            let _res = stream_writer.send(Message::Text(payload));
+            let _res = stream_writer.send(Message::text(payload));
         } else if let Err(RecvError::Lagged(amt)) = res {
             warn!("[Shard {shard_id}] Client is {amt} events behind!",);
         }
@@ -194,9 +191,11 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     // We need to know which shard this client is connected to in order to send messages to it
     let mut shard_sender = None;
 
-    let stream = WebSocketStream::from_raw_socket(stream, Role::Server, None).await;
+    let ws_conn = ServerBuilder::new()
+        .limits(Limits::unlimited())
+        .serve(stream);
 
-    let (sink, mut stream) = stream.split();
+    let (sink, mut stream) = ws_conn.split();
 
     // Write all messages from a queue to the sink
     let (stream_writer, stream_receiver) = unbounded_channel::<Message>();
@@ -212,18 +211,23 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     let mut shard_forward_task = None;
 
     while let Some(Ok(msg)) = stream.next().await {
-        let data = msg.into_data();
-        #[cfg(feature = "simd-json")]
-        let mut payload = unsafe { String::from_utf8_unchecked(data) };
-        #[cfg(not(feature = "simd-json"))]
-        let payload = unsafe { String::from_utf8_unchecked(data) };
+        if !msg.is_text() && !msg.is_binary() {
+            continue;
+        }
 
-        let Some(deserializer) = GatewayEvent::from_json(&payload) else { continue };
+        #[cfg(feature = "simd-json")]
+        let mut payload = unsafe { msg.as_text().unwrap_unchecked().to_owned() };
+        #[cfg(not(feature = "simd-json"))]
+        let payload = unsafe { msg.as_text().unwrap_unchecked() };
+
+        let Some(deserializer) = GatewayEvent::from_json(&payload) else {
+            continue;
+        };
 
         match deserializer.op() {
             1 => {
                 trace!("[{addr}] Sending heartbeat ACK");
-                let _res = stream_writer.send(Message::Text(HEARTBEAT_ACK.to_string()));
+                let _res = stream_writer.send(Message::text(HEARTBEAT_ACK.to_string()));
             }
             2 => {
                 debug!("[{addr}] Client is identifying");
@@ -333,7 +337,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             _ => {
                 if let Some(sender) = &shard_sender {
                     trace!("[{addr}] Sending {payload:?} to Discord directly");
-                    let _res = sender.send(payload);
+                    let _res = sender.send(payload.to_string());
                 } else {
                     warn!("[{addr}] Client attempted to send payload before IDENTIFY",);
                 }
@@ -352,13 +356,13 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
     Ok(())
 }
 
-async fn handler(
+fn handler(
     addr: SocketAddr,
     request: Request<Body>,
     state: State,
-    metrics: Arc<PrometheusHandle>,
-) -> Result<Response<Body>, Infallible> {
-    let response = match (request.method(), request.uri().path()) {
+    metrics: &PrometheusHandle,
+) -> Response<Body> {
+    match (request.method(), request.uri().path()) {
         (&Method::GET, "/metrics") => Response::builder()
             .status(StatusCode::OK)
             .body(Body::from(metrics.render()))
@@ -374,10 +378,8 @@ async fn handler(
         }
         // Usually one would return a 404 here, but we will just provide the websocket
         // upgrade for backwards compatibility.
-        _ => upgrade::server(addr, request, state).await,
-    };
-
-    Ok(response)
+        _ => upgrade::server(addr, request, state),
+    }
 }
 
 pub async fn run(
@@ -396,7 +398,12 @@ pub async fn run(
 
         async move {
             Ok::<_, Infallible>(service_fn(move |incoming: Request<Body>| {
-                handler(addr, incoming, state.clone(), metrics_handle.clone())
+                ready(Ok::<_, Infallible>(handler(
+                    addr,
+                    incoming,
+                    state.clone(),
+                    &metrics_handle,
+                )))
             }))
         }
     });

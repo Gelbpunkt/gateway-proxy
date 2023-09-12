@@ -16,7 +16,7 @@ use tracing::{debug, error, info};
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{Config, ConfigBuilder, Shard, ShardId};
-use twilight_gateway_queue::{LargeBotQueue, Queue};
+use twilight_gateway_queue::InMemoryQueue;
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
@@ -25,6 +25,7 @@ use std::{
     error::Error,
     str::FromStr,
     sync::{Arc, RwLock},
+    time::Duration,
 };
 
 use crate::config::CONFIG;
@@ -76,15 +77,16 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     // Check total shards required
     let gateway = client.gateway().authed().await?.model().await?;
 
+    let session = gateway.session_start_limit;
+
     let shard_count = CONFIG.shards.unwrap_or(gateway.shards);
 
     // Set up a queue for the shards
-    let queue: Arc<dyn Queue> = Arc::new(
-        LargeBotQueue::new(
-            gateway.session_start_limit.max_concurrency as usize,
-            client.clone(),
-        )
-        .await,
+    let queue = InMemoryQueue::new(
+        session.max_concurrency,
+        session.remaining,
+        Duration::from_millis(session.reset_after),
+        session.total,
     );
 
     // Create all shards
@@ -96,12 +98,12 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     info!("Creating shards {shard_start} to {shard_end_inclusive} of {shard_count} total",);
 
     let config = Config::builder(CONFIG.token.clone(), CONFIG.intents)
-        .queue(queue)
+        .queue(Arc::new(queue))
         .event_types(CONFIG.cache.clone().into())
         .build();
 
     for shard_id in shard_start..shard_end {
-        let mut builder = ConfigBuilder::with_config(config.clone());
+        let mut builder = ConfigBuilder::from(config.clone());
 
         if let Some(mut activity) = CONFIG.activity.clone() {
             // Replace {{shard}} with the actual ID
