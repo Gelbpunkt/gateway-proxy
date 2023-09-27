@@ -36,6 +36,8 @@ pub struct Config {
     pub status: Status,
     #[serde(default = "default_backpressure")]
     pub backpressure: usize,
+    #[serde(default = "default_validate_token")]
+    pub validate_token: bool,
     #[serde(default)]
     pub twilight_http_proxy: Option<String>,
     pub externally_accessible_url: String,
@@ -197,6 +199,10 @@ const fn default_status() -> Status {
 
 const fn default_backpressure() -> usize {
     100
+}
+
+const fn default_validate_token() -> bool {
+    true
 }
 
 pub enum Error {
