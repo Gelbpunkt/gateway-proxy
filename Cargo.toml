@@ -14,8 +14,8 @@ hyper = { version = "0.14", default-features = false, features = [
     "http1",
     "http2",
 ] }
+inotify = { version = "0.10", default-features = false, features = ["stream"] }
 itoa = "1.0"
-libc = { version = "0.2", default-features = false }
 metrics = { version = "0.21", default-features = false }
 metrics-exporter-prometheus = { version = "0.12", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
@@ -27,11 +27,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = [
     "std",
 ], optional = true }
-simd-json = { version = "0.10", default-features = false, features = [
+simd-json = { version = "0.12", default-features = false, features = [
     "serde_impl",
 ], optional = true }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread",
+    "signal",
 ] }
 tokio-websockets = { version = "0.4", default-features = false, features = [
     "server",

@@ -118,8 +118,6 @@ async fn forward_shard(
     send_guilds: bool,
     mut seq: usize,
 ) {
-    // Subscribe to events for this shard
-    let mut event_receiver = shard_status.events.subscribe();
     let shard_id = shard_status.id;
 
     debug!("[Shard {shard_id}] Starting to send events to client",);
@@ -159,6 +157,9 @@ async fn forward_shard(
     // For formatting the sequence number as a string, reuse a buffer
     let mut buffer = Buffer::new();
 
+    // Subscribe to events for this shard
+    let mut event_receiver = shard_status.events.subscribe();
+
     loop {
         let res = event_receiver.recv().await;
 
@@ -171,7 +172,7 @@ async fn forward_shard(
 
             let _res = stream_writer.send(Message::text(payload));
         } else if let Err(RecvError::Lagged(amt)) = res {
-            warn!("[Shard {shard_id}] Client is {amt} events behind!",);
+            warn!("[Shard {shard_id}] Client is {amt} events behind!");
         }
     }
 }

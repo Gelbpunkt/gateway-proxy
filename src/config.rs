@@ -1,8 +1,11 @@
+use futures_util::StreamExt;
+use inotify::{Inotify, WatchMask};
 use serde::Deserialize;
 #[cfg(not(feature = "simd-json"))]
 use serde_json::Error as JsonError;
 #[cfg(feature = "simd-json")]
 use simd_json::Error as JsonError;
+use tracing_subscriber::{filter::LevelFilter, reload};
 use twilight_cache_inmemory::ResourceType;
 use twilight_gateway::{EventTypeFlags, Intents};
 use twilight_model::gateway::presence::{Activity, Status};
@@ -12,6 +15,7 @@ use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     fs::read_to_string,
     process::exit,
+    str::FromStr,
     sync::LazyLock,
 };
 
@@ -245,3 +249,37 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
         }
     }
 });
+
+pub async fn watch_config_changes<S>(reload_handle: reload::Handle<LevelFilter, S>) {
+    let Ok(inotify) = Inotify::init() else {
+        tracing::error!("Failed to initialize inotify, log-levels cannot be reloaded on the fly");
+        return;
+    };
+
+    if inotify
+        .watches()
+        .add("config.json", WatchMask::MODIFY)
+        .is_err()
+    {
+        tracing::error!("Failed to add inotify watch, log-levels cannot be reloaded on the fly");
+        return;
+    };
+
+    tracing::debug!("Inotify is initialized");
+
+    let buffer = [0u8; 4096];
+    // This method never returns Err
+    let mut events = inotify.into_event_stream(buffer).unwrap();
+
+    while let Some(Ok(_)) = events.next().await {
+        // This currently only supports reloading log-levels
+        if let Ok(config) = load("config.json") {
+            let _ = reload_handle.modify(|filter| {
+                *filter = LevelFilter::from_str(&config.log_level).unwrap_or(LevelFilter::INFO);
+            });
+            tracing::info!("Config was modified, reloaded log-level");
+        } else {
+            tracing::error!("Config was modified, but failed to reload");
+        }
+    }
+}

@@ -8,14 +8,20 @@
     clippy::struct_excessive_bools,
     clippy::option_if_let_else, // I disagree with this lint
 )]
-use libc::{c_int, sighandler_t, signal, SIGINT, SIGTERM};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use mimalloc::MiMalloc;
-use tokio::sync::broadcast;
+use tokio::{
+    signal::unix::{signal, SignalKind},
+    sync::broadcast,
+    task::JoinSet,
+    time::timeout,
+};
 use tracing::{debug, error, info};
-use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    filter::LevelFilter, layer::SubscriberExt, reload, util::SubscriberInitExt,
+};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::{Config, ConfigBuilder, Shard, ShardId};
+use twilight_gateway::{CloseFrame, Config, ConfigBuilder, Shard, ShardId};
 use twilight_gateway_queue::InMemoryQueue;
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
@@ -24,7 +30,10 @@ use std::{
     collections::HashMap,
     error::Error,
     str::FromStr,
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
     time::Duration,
 };
 
@@ -42,23 +51,19 @@ mod upgrade;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-pub extern "C" fn handler(_: c_int) {
-    std::process::exit(0);
-}
+static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
-unsafe fn set_os_handlers() {
-    signal(SIGINT, handler as extern "C" fn(_) as sighandler_t);
-    signal(SIGTERM, handler as extern "C" fn(_) as sighandler_t);
-}
-
-#[allow(clippy::cognitive_complexity)]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let level_filter = LevelFilter::from_str(&CONFIG.log_level).unwrap_or(LevelFilter::INFO);
+    let (reload_level_filter, reload_handle) = reload::Layer::new(level_filter);
     let fmt_layer = tracing_subscriber::fmt::layer();
     tracing_subscriber::registry()
         .with(fmt_layer)
-        .with(level_filter)
+        .with(reload_level_filter)
         .init();
+
+    tokio::spawn(config::watch_config_changes(reload_handle));
 
     // Set up metrics collection
     let recorder = PrometheusBuilder::new().build_recorder();
@@ -102,6 +107,8 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         .event_types(CONFIG.cache.clone().into())
         .build();
 
+    let mut dispatch_tasks = JoinSet::new();
+
     for shard_id in shard_start..shard_end {
         let mut builder = ConfigBuilder::from(config.clone());
 
@@ -141,7 +148,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         // Now pipe the events into the broadcast
         // and handle state updates for the guild cache
         // and set the ready event if received
-        tokio::spawn(dispatch::events(
+        dispatch_tasks.spawn(dispatch::events(
             shard,
             shard_status.clone(),
             shard_id,
@@ -159,16 +166,56 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         sessions: RwLock::new(HashMap::new()),
     });
 
-    if let Err(e) = server::run(CONFIG.port, state, metrics_handle).await {
-        error!("{}", e);
-    };
+    let state_clone = state.clone();
+    tokio::spawn(async move {
+        if let Err(e) = server::run(CONFIG.port, state_clone, metrics_handle).await {
+            error!("{}", e);
+        }
+    });
+
+    let mut sigint = signal(SignalKind::interrupt()).unwrap();
+    let mut sigterm = signal(SignalKind::terminate()).unwrap();
+
+    tokio::select! {
+        _ = sigint.recv() => info!("received SIGINT, shutting down"),
+        _ = sigterm.recv() => info!("received SIGTERM, shutting down"),
+    }
+
+    // Set the flag so that event handlers will be able to tell that a GatewayClose is an expected shutdown
+    SHUTDOWN.store(true, Ordering::Relaxed);
+
+    // Initiate the shutdown for all shards
+    for shard in &state.shards {
+        let _ = shard.sender.close(CloseFrame::NORMAL);
+    }
+
+    let mut graceful = 0;
+    let mut ungraceful = dispatch_tasks.len();
+
+    // Wait for all shards to shut down, but if we for some reason fail to do so, exit anyways
+    info!("waiting for {ungraceful} active shard dispatching tasks to shut down");
+
+    loop {
+        match timeout(Duration::from_secs(10), dispatch_tasks.join_next()).await {
+            Ok(Some(_)) => {
+                debug!("shard dispatching task shut down");
+                graceful += 1;
+                ungraceful -= 1;
+            } // Shard task shut down
+            Ok(None) => break, // Set is empty, all tasks were graceful
+            Err(_) => {
+                error!("no shard shut down within 10 seconds, force quitting");
+                break;
+            } // No shard shut down in 10s, remaining ones are ungraceful
+        }
+    }
+
+    info!("{graceful} shards shut down gracefully, {ungraceful} not gracefully");
 
     Ok(())
 }
 
 fn main() {
-    unsafe { set_os_handlers() };
-
     if let Err(e) = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
