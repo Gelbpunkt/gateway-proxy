@@ -270,7 +270,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 
                 let compress = {
                     if CONFIG.disable_compression {
-                        None
+                        Some(false)
                     } else {
                         identify.d.compress
                     }
