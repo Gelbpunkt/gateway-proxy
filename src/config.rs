@@ -43,6 +43,8 @@ pub struct Config {
     #[serde(default = "default_validate_token")]
     pub validate_token: bool,
     #[serde(default)]
+    pub disable_compression: bool,
+    #[serde(default)]
     pub twilight_http_proxy: Option<String>,
     pub externally_accessible_url: String,
     #[serde(default)]

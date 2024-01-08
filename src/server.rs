@@ -271,7 +271,13 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                 // Create a new session for this client
                 let session = Session {
                     shard_id,
-                    compress: identify.d.compress,
+                    compress: {
+                        if CONFIG.disable_compression {
+                            None
+                        } else {
+                            identify.d.compress
+                        }
+                    },
                 };
                 let session_id = state.create_session(session);
 
