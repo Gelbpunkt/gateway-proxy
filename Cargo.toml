@@ -34,9 +34,10 @@ rand = "0.8"
 ring = { version = "0.16"  }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", default-features = true, features = ["std"] }
-tokio = { version = "1", default-features = false, features = [
+tokio = { version = "1", default-features = true, features = [
     "rt-multi-thread",
     "signal",
+    "macros",
 ] }
 tokio-websockets = { version = "0.4", features = [
     "server",
@@ -47,12 +48,11 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "fmt",
     "std",
 ] }
-twilight-cache-inmemory = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false }
+twilight-cache-inmemory = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = true }
 twilight-gateway = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false, features = [
     "rustls-webpki-roots",
 ] }
-twilight-gateway-queue = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false, features = [
-] }
+twilight-gateway-queue = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = true, features = [] }
 twilight-http = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false, features = [
     "rustls-webpki-roots",
 ] }

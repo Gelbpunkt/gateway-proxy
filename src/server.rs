@@ -221,7 +221,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
         #[cfg(not(feature = "simd-json"))]
         let payload = unsafe { msg.as_text().unwrap_unchecked() };
 
-        let Some(deserializer) = GatewayEvent::from_json(&payload) else {
+        let Some(deserializer) = GatewayEvent::from_json(payload) else {
             continue;
         };
 
@@ -233,10 +233,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             2 => {
                 debug!("[{addr}] Client is identifying");
 
-                #[cfg(feature = "simd-json")]
-                let maybe_identify = unsafe { simd_json::from_str(&mut payload) };
-                #[cfg(not(feature = "simd-json"))]
-                let maybe_identify = serde_json::from_str(&payload);
+                let maybe_identify = serde_json::from_str(payload);
 
                 let identify: Identify = match maybe_identify {
                     Ok(identify) => identify,
@@ -302,10 +299,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
             6 => {
                 debug!("[{addr}] Client is resuming");
 
-                #[cfg(feature = "simd-json")]
-                let maybe_resume = unsafe { simd_json::from_str(&mut payload) };
-                #[cfg(not(feature = "simd-json"))]
-                let maybe_resume = serde_json::from_str(&payload);
+                let maybe_resume = serde_json::from_str(payload);
 
                 let resume: Resume = match maybe_resume {
                     Ok(resume) => resume,

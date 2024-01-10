@@ -53,7 +53,7 @@ impl Ready {
 /// State of a single shard.
 pub struct Shard {
     /// ID of this shard.
-    pub id: u32,
+    pub id: u64,
     /// Sender for this shard.
     pub sender: MessageSender,
     /// Handle for broadcasting events for this shard.
@@ -68,7 +68,7 @@ pub struct Shard {
 #[derive(Clone)]
 pub struct Session {
     /// Shard ID that this session is for.
-    pub shard_id: u32,
+    pub shard_id: u64,
     /// Compression as requested in IDENTIFY.
     pub compress: Option<bool>,
 }
@@ -78,7 +78,7 @@ pub struct Inner {
     /// State of all shards managed by the proxy.
     pub shards: Vec<Arc<Shard>>,
     /// Total shard count.
-    pub shard_count: u32,
+    pub shard_count: u64,
     /// All sessions active in the proxy.
     pub sessions: RwLock<HashMap<String, Session>>,
 }

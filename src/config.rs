@@ -26,11 +26,11 @@ pub struct Config {
     #[serde(default = "default_port")]
     pub port: u16,
     #[serde(default)]
-    pub shards: Option<u32>,
+    pub shards: Option<u64>,
     #[serde(default)]
-    pub shard_start: Option<u32>,
+    pub shard_start: Option<u64>,
     #[serde(default)]
-    pub shard_end: Option<u32>,
+    pub shard_end: Option<u64>,
     #[serde(default)]
     pub activity: Option<Activity>,
     #[serde(default = "default_status")]
@@ -144,7 +144,7 @@ impl From<Cache> for ResourceType {
         }
 
         if cache.current_member {
-            resource_types |= Self::MEMBER_CURRENT;
+            resource_types |= Self::USER_CURRENT;
         }
 
         if cache.members {

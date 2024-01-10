@@ -24,7 +24,7 @@ const TEN_SECONDS: Duration = Duration::from_secs(10);
 pub async fn events(
     mut shard: Shard,
     shard_state: Arc<ShardState>,
-    shard_id: u32,
+    shard_id: u64,
     broadcast_tx: broadcast::Sender<BroadcastMessage>,
 ) {
     // This method only wants to relay events while the shard is in a READY state
@@ -113,7 +113,7 @@ pub async fn events(
         if let Ok(Some(event)) = parse(payload, event_type_flags) {
             match event {
                 TwilightGatewayEvent::Dispatch(_, event) => {
-                    shard_state.guilds.update(Event::from(event));
+                    shard_state.guilds.update(&Event::from(event));
                 }
                 TwilightGatewayEvent::InvalidateSession(can_resume) => {
                     debug!("[Shard {shard_id}] Session invalidated, resumable: {can_resume}");

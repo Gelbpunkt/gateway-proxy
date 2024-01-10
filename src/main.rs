@@ -22,7 +22,7 @@ use tracing_subscriber::{
 };
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{CloseFrame, Config, ConfigBuilder, Shard, ShardId};
-use twilight_gateway_queue::InMemoryQueue;
+use twilight_gateway_queue::LargeBotQueue;
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 
@@ -87,12 +87,11 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let shard_count = CONFIG.shards.unwrap_or(gateway.shards);
 
     // Set up a queue for the shards
-    let queue = InMemoryQueue::new(
-        session.max_concurrency,
-        session.remaining,
-        Duration::from_millis(session.reset_after),
-        session.total,
-    );
+    let queue = LargeBotQueue::new(
+        session.max_concurrency.try_into().unwrap(),
+        client.clone(),
+    )
+    .await;
 
     // Create all shards
     let shard_start = CONFIG.shard_start.unwrap_or(0);
