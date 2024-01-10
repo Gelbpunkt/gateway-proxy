@@ -1,6 +1,4 @@
 use itoa::Buffer;
-#[cfg(feature = "simd-json")]
-use simd_json::Mutable;
 use tokio::{sync::broadcast, time::Instant};
 use tracing::{debug, trace};
 use twilight_gateway::{parse, ConnectionStatus, Event, EventTypeFlags, Message, Shard};
@@ -81,11 +79,6 @@ pub async fn events(
 
             if event_name == "READY" {
                 // Use the raw JSON from READY to create a new blank READY
-
-                #[cfg(feature = "simd-json")]
-                let mut ready: Ready =
-                    unsafe { simd_json::from_str(&mut payload.clone()).unwrap() };
-                #[cfg(not(feature = "simd-json"))]
                 let mut ready: Ready = serde_json::from_str(&payload).unwrap();
 
                 // Clear the guilds

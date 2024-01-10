@@ -3,10 +3,19 @@ name = "gateway-proxy"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = true
+opt-level = 3
+panic = "abort"
+debug-assertions = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 base64 = "0.21"
-flate2 = { version = "1.0", default-features = false }
+flate2 = { version = "1.0", features = ["rust_backend"] }
 futures-util = { version = "0.3", default-features = false }
 halfbrown = { version = "0.2", features = ["serde"] }
 hyper = { version = "0.14", default-features = false, features = [
@@ -22,53 +31,29 @@ mimalloc = { version = "0.1", default-features = false, features = [
     "override",
 ] }
 rand = "0.8"
-ring = { version = "0.16", default-features = false }
+ring = { version = "0.16"  }
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", default-features = false, features = [
-    "std",
-], optional = true }
-simd-json = { version = "0.12", default-features = false, features = [
-    "serde_impl",
-], optional = true }
+serde_json = { version = "1", default-features = true, features = ["std"] }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread",
     "signal",
 ] }
-tokio-websockets = { version = "0.4", default-features = false, features = [
+tokio-websockets = { version = "0.4", features = [
     "server",
+    "ring"
 ] }
 tracing = { version = "0.1", default-features = false, features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = [
     "fmt",
     "std",
 ] }
-twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false }
-twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+twilight-cache-inmemory = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false }
+twilight-gateway = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false, features = [
     "rustls-webpki-roots",
 ] }
-twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+twilight-gateway-queue = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false, features = [
 ] }
-twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+twilight-http = { git = "https://github.com/twilight-rs/twilight.git", branch = "main", default-features = false, features = [
     "rustls-webpki-roots",
 ] }
-twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom" }
-
-[features]
-default = ["simd"]
-simd = [
-    "flate2/zlib-ng",
-    "simd-json",
-    "twilight-gateway/zlib-simd",
-    "twilight-gateway/simd-json",
-    "twilight-http/simd-json",
-]
-no-simd = ["flate2/zlib", "serde_json", "twilight-gateway/zlib-stock"]
-
-[profile.release]
-codegen-units = 1
-debug = false
-incremental = false
-lto = true
-opt-level = 3
-panic = "abort"
-debug-assertions = false
+twilight-model = { git = "https://github.com/twilight-rs/twilight.git", branch = "main" }

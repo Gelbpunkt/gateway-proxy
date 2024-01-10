@@ -1,10 +1,7 @@
 use futures_util::StreamExt;
 use inotify::{Inotify, WatchMask};
 use serde::Deserialize;
-#[cfg(not(feature = "simd-json"))]
 use serde_json::Error as JsonError;
-#[cfg(feature = "simd-json")]
-use simd_json::Error as JsonError;
 use tracing_subscriber::{filter::LevelFilter, reload};
 use twilight_cache_inmemory::ResourceType;
 use twilight_gateway::{EventTypeFlags, Intents};
@@ -225,15 +222,6 @@ impl Display for Error {
     }
 }
 
-#[cfg(feature = "simd-json")]
-pub fn load(path: &str) -> Result<Config, Error> {
-    let mut content = read_to_string(path).map_err(|_| Error::NotFound(path.to_string()))?;
-    let config = unsafe { simd_json::from_str(&mut content) }.map_err(Error::InvalidConfig)?;
-
-    Ok(config)
-}
-
-#[cfg(not(feature = "simd-json"))]
 pub fn load(path: &str) -> Result<Config, Error> {
     let content = read_to_string(path).map_err(|_| Error::NotFound(path.to_string()))?;
     let config = serde_json::from_str(&content).map_err(Error::InvalidConfig)?;
