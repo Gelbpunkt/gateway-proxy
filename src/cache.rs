@@ -41,11 +41,11 @@ pub enum Event {
     GuildDelete(GuildDelete),
 }
 
-pub struct Guilds(Arc<InMemoryCache>, u32);
+pub struct Guilds(Arc<InMemoryCache>);
 
 impl Guilds {
-    pub fn new(cache: Arc<InMemoryCache>, shard_id: u32) -> Self {
-        Self(cache, shard_id)
+    pub fn new(cache: Arc<InMemoryCache>) -> Self {
+        Self(cache)
     }
 
     pub fn update(&self, value: impl UpdateCache) {

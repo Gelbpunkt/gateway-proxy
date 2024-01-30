@@ -1,9 +1,12 @@
+use futures_util::StreamExt;
 use itoa::Buffer;
 #[cfg(feature = "simd-json")]
-use simd_json::Mutable;
+use simd_json::prelude::ValueAsMutContainer;
 use tokio::{sync::broadcast, time::Instant};
 use tracing::{debug, trace};
-use twilight_gateway::{parse, ConnectionStatus, Event, EventTypeFlags, Message, Shard};
+use twilight_gateway::{
+    parse, Event, EventTypeFlags, Message, Shard, ShardState as ConnectionState,
+};
 use twilight_model::gateway::event::GatewayEvent as TwilightGatewayEvent;
 
 use std::{
@@ -46,23 +49,22 @@ pub async fn events(
 
         if now.duration_since(last_metrics_update) > TEN_SECONDS {
             let latencies = shard.latency().recent();
-            let info = shard.status();
+            let info = shard.state();
             update_shard_statistics(&shard_id_str, &shard_state, info, latencies);
             last_metrics_update = now;
         }
 
-        let payload = match shard.next_message().await {
-            Ok(Message::Text(payload)) => payload,
-            Ok(Message::Close(_)) if SHUTDOWN.load(Ordering::Relaxed) => return,
-            Ok(Message::Close(_)) => continue,
-            Err(e) => {
+        let payload = match shard.next().await {
+            Some(Ok(Message::Text(payload))) => payload,
+            Some(Ok(Message::Close(_))) if SHUTDOWN.load(Ordering::Relaxed) => return,
+            Some(Ok(Message::Close(_))) => continue,
+            Some(Err(e)) => {
                 tracing::error!("Error receiving message: {e}");
-
-                if e.is_fatal() {
-                    return;
-                }
-
                 continue;
+            }
+            None => {
+                tracing::warn!("Shard {shard_id} stream closed");
+                return;
             }
         };
 
@@ -77,7 +79,7 @@ pub async fn events(
         let (op, sequence, event_type) = event.into_parts();
 
         if let Some(EventTypeInfo(event_name, _)) = event_type {
-            metrics::increment_counter!("gateway_shard_events", "shard" => shard_id_str.clone(), "event_type" => event_name.to_owned());
+            metrics::counter!("gateway_shard_events", "shard" => shard_id_str.clone(), "event_type" => event_name.to_owned()).increment(1);
 
             if event_name == "READY" {
                 // Use the raw JSON from READY to create a new blank READY
@@ -141,37 +143,48 @@ pub async fn events(
 pub fn update_shard_statistics(
     shard_id: &str,
     shard_state: &Arc<ShardState>,
-    connection_status: &ConnectionStatus,
+    connection_status: ConnectionState,
     latencies: &[Duration],
 ) {
     // There is no way around this, sadly
     let connection_status = match connection_status {
-        ConnectionStatus::Connected => 4.0,
-        ConnectionStatus::Disconnected { .. } => 1.0,
-        ConnectionStatus::Identifying => 2.0,
-        ConnectionStatus::Resuming => 3.0,
-        ConnectionStatus::FatallyClosed { .. } => 0.0,
+        ConnectionState::Active => 4.0,
+        ConnectionState::Disconnected { .. } => 1.0,
+        ConnectionState::Identifying => 2.0,
+        ConnectionState::Resuming => 3.0,
+        ConnectionState::FatallyClosed { .. } => 0.0,
     };
 
     let latency = latencies.first().map_or(f64::NAN, Duration::as_secs_f64);
 
-    metrics::histogram!("gateway_shard_latency_histogram", latency, "shard" => shard_id.to_string());
+    metrics::histogram!("gateway_shard_latency_histogram", "shard" => shard_id.to_string())
+        .record(latency);
     metrics::gauge!(
         "gateway_shard_latency",
-        latency,
         "shard" => shard_id.to_string()
-    );
-    metrics::histogram!("gateway_shard_status", connection_status, "shard" => shard_id.to_string());
+    )
+    .set(latency);
+    metrics::histogram!("gateway_shard_status", "shard" => shard_id.to_string())
+        .record(connection_status);
 
     let stats = shard_state.guilds.stats();
 
-    metrics::gauge!("gateway_cache_emojis", stats.emojis() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_guilds", stats.guilds() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_members", stats.members() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_presences", stats.presences() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_channels", stats.channels() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_roles", stats.roles() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_unavailable_guilds", stats.unavailable_guilds() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_users", stats.users() as f64, "shard" => shard_id.to_string());
-    metrics::gauge!("gateway_cache_voice_states", stats.voice_states() as f64, "shard" => shard_id.to_string());
+    metrics::gauge!("gateway_cache_emojis", "shard" => shard_id.to_string())
+        .set(stats.emojis() as f64);
+    metrics::gauge!("gateway_cache_guilds", "shard" => shard_id.to_string())
+        .set(stats.guilds() as f64);
+    metrics::gauge!("gateway_cache_members", "shard" => shard_id.to_string())
+        .set(stats.members() as f64);
+    metrics::gauge!("gateway_cache_presences", "shard" => shard_id.to_string())
+        .set(stats.presences() as f64);
+    metrics::gauge!("gateway_cache_channels", "shard" => shard_id.to_string())
+        .set(stats.channels() as f64);
+    metrics::gauge!("gateway_cache_roles", "shard" => shard_id.to_string())
+        .set(stats.roles() as f64);
+    metrics::gauge!("gateway_cache_unavailable_guilds", "shard" => shard_id.to_string())
+        .set(stats.unavailable_guilds() as f64);
+    metrics::gauge!("gateway_cache_users", "shard" => shard_id.to_string())
+        .set(stats.users() as f64);
+    metrics::gauge!("gateway_cache_voice_states", "shard" => shard_id.to_string())
+        .set(stats.voice_states() as f64);
 }

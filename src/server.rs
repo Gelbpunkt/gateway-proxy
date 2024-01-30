@@ -1,9 +1,11 @@
+use bytes::Bytes;
 use flate2::{Compress, Compression, FlushCompress, Status};
 use futures_util::{Sink, SinkExt, StreamExt};
-use hyper::{
-    server::conn::AddrStream,
-    service::{make_service_fn, service_fn},
-    Body, Method, Request, Response, Server, StatusCode,
+use http_body_util::Full;
+use hyper::{body::Incoming, service::service_fn, Method, Request, Response, StatusCode};
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto,
 };
 use itoa::Buffer;
 use metrics_exporter_prometheus::PrometheusHandle;
@@ -13,6 +15,7 @@ use serde_json::{to_string, Value as OwnedValue};
 use simd_json::{to_string, OwnedValue};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
+    net::TcpListener,
     sync::{
         broadcast::error::RecvError,
         mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
@@ -84,7 +87,7 @@ where
     if use_zlib {
         compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
 
-        sink.send(Message::binary(compression_buffer.as_slice()))
+        sink.send(Message::binary(Bytes::from(compression_buffer.to_vec())))
             .await?;
     } else {
         sink.send(Message::text(HELLO.to_string())).await?;
@@ -101,7 +104,7 @@ where
             compression_buffer.clear();
             compress_full(&mut compress, &mut compression_buffer, &msg.into_payload());
 
-            sink.send(Message::binary(compression_buffer.as_slice()))
+            sink.send(Message::binary(Bytes::from(compression_buffer.to_vec())))
                 .await?;
         } else {
             sink.send(msg).await?;
@@ -363,14 +366,14 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
 fn handler(
     addr: SocketAddr,
-    request: Request<Body>,
+    request: Request<Incoming>,
     state: State,
     metrics: &PrometheusHandle,
-) -> Response<Body> {
+) -> Response<Full<Bytes>> {
     match (request.method(), request.uri().path()) {
         (&Method::GET, "/metrics") => Response::builder()
             .status(StatusCode::OK)
-            .body(Body::from(metrics.render()))
+            .body(Full::from(metrics.render()))
             .unwrap(),
         (&Method::GET, "/shard-count") => {
             let mut buffer = itoa::Buffer::new();
@@ -378,7 +381,7 @@ fn handler(
 
             Response::builder()
                 .status(StatusCode::OK)
-                .body(Body::from(shard_count_str.to_owned()))
+                .body(Full::from(shard_count_str.to_string()))
                 .unwrap()
         }
         // Usually one would return a 404 here, but we will just provide the websocket
@@ -387,39 +390,50 @@ fn handler(
     }
 }
 
-pub async fn run(
-    port: u16,
-    state: State,
-    metrics_handle: Arc<PrometheusHandle>,
-) -> Result<(), Error> {
+pub async fn run(port: u16, state: State, metrics_handle: PrometheusHandle) -> Result<(), Error> {
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
 
-    let service = make_service_fn(move |addr: &AddrStream| {
-        let state = state.clone();
-        let metrics_handle = metrics_handle.clone();
-        let addr = addr.remote_addr();
-
-        trace!("[{addr:?}] New connection");
-
-        async move {
-            Ok::<_, Infallible>(service_fn(move |incoming: Request<Body>| {
-                ready(Ok::<_, Infallible>(handler(
-                    addr,
-                    incoming,
-                    state.clone(),
-                    &metrics_handle,
-                )))
-            }))
+    let listener = match TcpListener::bind(addr).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            error!("Failed to bind TCP listener: {e}");
+            return Ok(());
         }
-    });
-
-    let server = Server::bind(&addr).serve(service);
+    };
 
     info!("Listening on {addr}");
 
-    if let Err(why) = server.await {
-        error!("Fatal server error: {why}");
-    }
+    loop {
+        let (conn, addr) = match listener.accept().await {
+            Ok((stream, addr)) => (stream, addr),
+            Err(e) => {
+                error!("Failed to accept connection: {e}");
+                return Ok(());
+            }
+        };
 
-    Ok(())
+        trace!("[{addr:?}] New connection");
+
+        let state = state.clone();
+        let metrics_handle = metrics_handle.clone();
+
+        tokio::spawn(async move {
+            if let Err(e) = auto::Builder::new(TokioExecutor::new())
+                .serve_connection_with_upgrades(
+                    TokioIo::new(conn),
+                    service_fn(move |incoming: Request<Incoming>| {
+                        ready(Ok::<_, Infallible>(handler(
+                            addr,
+                            incoming,
+                            state.clone(),
+                            &metrics_handle,
+                        )))
+                    }),
+                )
+                .await
+            {
+                error!("Error handling connection: {e}");
+            }
+        });
+    }
 }

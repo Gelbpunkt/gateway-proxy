@@ -21,7 +21,7 @@ use tracing_subscriber::{
     filter::LevelFilter, layer::SubscriberExt, reload, util::SubscriberInitExt,
 };
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::{CloseFrame, Config, ConfigBuilder, Shard, ShardId};
+use twilight_gateway::{CloseFrame, ConfigBuilder, Shard, ShardId};
 use twilight_gateway_queue::InMemoryQueue;
 use twilight_http::Client;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
@@ -66,9 +66,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     tokio::spawn(config::watch_config_changes(reload_handle));
 
     // Set up metrics collection
-    let recorder = PrometheusBuilder::new().build_recorder();
-    let metrics_handle = Arc::new(recorder.handle());
-    metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
+    let metrics_handle = PrometheusBuilder::new().install_recorder().unwrap();
 
     // Set up a HTTPClient
     let mut client_builder = Client::builder().token(CONFIG.token.clone());
@@ -102,9 +100,8 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     info!("Creating shards {shard_start} to {shard_end_inclusive} of {shard_count} total",);
 
-    let config = Config::builder(CONFIG.token.clone(), CONFIG.intents)
-        .queue(Arc::new(queue))
-        .event_types(CONFIG.cache.clone().into())
+    let config = ConfigBuilder::new(CONFIG.token.clone(), CONFIG.intents)
+        .queue(queue)
         .build();
 
     let mut dispatch_tasks = JoinSet::new();
@@ -133,7 +130,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
                 .message_cache_size(0)
                 .build(),
         );
-        let guild_cache = cache::Guilds::new(cache.clone(), shard_id);
+        let guild_cache = cache::Guilds::new(cache.clone());
 
         let ready = state::Ready::new();
 

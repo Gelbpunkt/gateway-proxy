@@ -1,12 +1,15 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
+use http_body_util::Full;
 use hyper::{
+    body::{Bytes, Incoming},
     header::{
         HeaderValue, CONNECTION, SEC_WEBSOCKET_ACCEPT, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_VERSION,
         UPGRADE,
     },
     http::StatusCode,
-    upgrade, Body, Request, Response,
+    upgrade, Request, Response,
 };
+use hyper_util::rt::TokioIo;
 use ring::digest;
 use tracing::error;
 
@@ -23,7 +26,11 @@ const GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 ///
 /// This method is one of two parts in the communication between server
 /// and client where zlib-stream compression may be requested.
-pub fn server(addr: SocketAddr, mut request: Request<Body>, state: State) -> Response<Body> {
+pub fn server(
+    addr: SocketAddr,
+    mut request: Request<Incoming>,
+    state: State,
+) -> Response<Full<Bytes>> {
     let uri = request.uri();
     let query = uri.query();
 
@@ -31,7 +38,7 @@ pub fn server(addr: SocketAddr, mut request: Request<Body>, state: State) -> Res
     // string parameters
     let use_zlib = query.map_or(false, |q| q.contains("compress=zlib-stream"));
 
-    let mut response = Response::new(Body::empty());
+    let mut response = Response::new(Full::default());
 
     if request.headers().get(UPGRADE).and_then(|v| v.to_str().ok()) != Some("websocket") {
         *response.status_mut() = StatusCode::BAD_REQUEST;
@@ -49,7 +56,7 @@ pub fn server(addr: SocketAddr, mut request: Request<Body>, state: State) -> Res
         tokio::spawn(async move {
             match upgrade::on(&mut request).await {
                 Ok(upgraded) => {
-                    let _res = handle_client(addr, upgraded, state, use_zlib).await;
+                    let _res = handle_client(addr, TokioIo::new(upgraded), state, use_zlib).await;
                 }
                 Err(e) => error!("[{}] Websocket upgrade error: {}", addr, e),
             }
