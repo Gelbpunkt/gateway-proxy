@@ -53,7 +53,11 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
-#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    clippy::redundant_pub_crate
+)]
 async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     let level_filter = LevelFilter::from_str(&CONFIG.log_level).unwrap_or(LevelFilter::INFO);
     let (reload_level_filter, reload_handle) = reload::Layer::new(level_filter);

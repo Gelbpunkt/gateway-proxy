@@ -87,7 +87,7 @@ where
     if use_zlib {
         compress_full(&mut compress, &mut compression_buffer, HELLO.as_bytes());
 
-        sink.send(Message::binary(Bytes::from(compression_buffer.to_vec())))
+        sink.send(Message::binary(Bytes::from(compression_buffer.clone())))
             .await?;
     } else {
         sink.send(Message::text(HELLO.to_string())).await?;
@@ -104,7 +104,7 @@ where
             compression_buffer.clear();
             compress_full(&mut compress, &mut compression_buffer, &msg.into_payload());
 
-            sink.send(Message::binary(Bytes::from(compression_buffer.to_vec())))
+            sink.send(Message::binary(Bytes::from(compression_buffer.clone())))
                 .await?;
         } else {
             sink.send(msg).await?;
