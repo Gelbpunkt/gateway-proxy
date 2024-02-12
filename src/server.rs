@@ -271,10 +271,18 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
                 trace!("[{addr}] Shard ID is {shard_id}");
 
+		let compress = {
+                    if CONFIG.allow_compression {
+			identify.d.compress
+		    } else {
+                        Some(false)
+                    } 
+                };
+
                 // Create a new session for this client
                 let session = Session {
                     shard_id,
-                    compress: identify.d.compress,
+                    compress,
                 };
                 let session_id = state.create_session(session);
 
@@ -291,7 +299,7 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
                         0,
                     )));
 
-                    let _res = sender.send(identify.d.compress);
+                    let _res = sender.send(compress);
                 }
             }
             6 => {

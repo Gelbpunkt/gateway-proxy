@@ -42,6 +42,8 @@ pub struct Config {
     pub backpressure: usize,
     #[serde(default = "default_validate_token")]
     pub validate_token: bool,
+    #[serde(default = "default_allow_compression")]
+    pub allow_compression: bool,
     #[serde(default)]
     pub twilight_http_proxy: Option<String>,
     pub externally_accessible_url: String,
@@ -208,6 +210,10 @@ const fn default_backpressure() -> usize {
 const fn default_validate_token() -> bool {
     true
 }
+
+const fn default_allow_compression() -> bool {
+    true
+}   
 
 pub enum Error {
     InvalidConfig(JsonError),
