@@ -213,7 +213,7 @@ const fn default_validate_token() -> bool {
 
 const fn default_allow_compression() -> bool {
     true
-}   
+}
 
 pub enum Error {
     InvalidConfig(JsonError),

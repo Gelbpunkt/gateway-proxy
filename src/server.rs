@@ -271,19 +271,16 @@ pub async fn handle_client<S: 'static + AsyncRead + AsyncWrite + Unpin + Send>(
 
                 trace!("[{addr}] Shard ID is {shard_id}");
 
-		let compress = {
+                let compress = {
                     if CONFIG.allow_compression {
-			identify.d.compress
-		    } else {
+                        identify.d.compress
+                    } else {
                         Some(false)
-                    } 
+                    }
                 };
 
                 // Create a new session for this client
-                let session = Session {
-                    shard_id,
-                    compress,
-                };
+                let session = Session { shard_id, compress };
                 let session_id = state.create_session(session);
 
                 // The client is connected to this shard, so prepare for sending commands to it
