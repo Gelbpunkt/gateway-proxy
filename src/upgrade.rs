@@ -15,7 +15,7 @@ use tracing::error;
 
 use std::net::SocketAddr;
 
-use crate::{server::handle_client, state::State};
+use crate::{config::CONFIG, server::handle_client, state::State};
 
 /// Websocket GUID constant as specified in RFC6455:
 /// <https://datatracker.ietf.org/doc/html/rfc6455#section-1.3>
@@ -36,7 +36,8 @@ pub fn server(
 
     // Track whether the client requested zlib encoding in the query
     // string parameters
-    let use_zlib = query.map_or(false, |q| q.contains("compress=zlib-stream"));
+    let use_zlib =
+        CONFIG.allow_compression && query.map_or(false, |q| q.contains("compress=zlib-stream"));
 
     let mut response = Response::new(Full::default());
 
