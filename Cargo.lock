@@ -1376,9 +1376,9 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "subtle"
-version = "2.6.0"
+version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d0208408ba0c3df17ed26eb06992cb1a1268d41b2c0e12e65203fbe3972cee5"
+checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
@@ -1606,7 +1606,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "bitflags 2.5.0",
  "dashmap",
@@ -1617,7 +1617,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "bitflags 2.5.0",
  "fastrand",
@@ -1637,7 +1637,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "tokio",
  "tracing",
@@ -1646,7 +1646,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "fastrand",
  "http",
@@ -1668,7 +1668,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "tokio",
  "tracing",
@@ -1677,7 +1677,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "bitflags 2.5.0",
  "serde",
@@ -1689,7 +1689,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#456423c29a44c9a023b305323aa8afeec0320631"
+source = "git+https://github.com/Gelbpunkt/twilight.git?branch=0.16#946905d6f28aef49ee1414c08a1ae786dfdc6810"
 dependencies = [
  "twilight-model",
 ]

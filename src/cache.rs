@@ -58,33 +58,33 @@ impl Guilds {
     pub fn get_ready_payload(&self, mut ready: JsonObject, sequence: &mut usize) -> Payload {
         *sequence += 1;
 
-        let unavailable_guilds = self
+        let guild_id_to_json = |guild_id: Id<GuildMarker>| {
+            #[cfg(feature = "simd-json")]
+            {
+                hashmap! {
+                    String::from("id") => guild_id.to_string().into(),
+                    String::from("unavailable") => true.into(),
+                }
+                .into()
+            }
+            #[cfg(not(feature = "simd-json"))]
+            {
+                serde_json::json!({
+                    "id": guild_id.to_string(),
+                    "unavailable": true
+                })
+            }
+        };
+
+        let guilds = self
             .0
             .iter()
             .guilds()
-            .map(|guild| {
-                #[cfg(feature = "simd-json")]
-                {
-                    hashmap! {
-                        String::from("id") => guild.id().to_string().into(),
-                        String::from("unavailable") => true.into(),
-                    }
-                    .into()
-                }
-                #[cfg(not(feature = "simd-json"))]
-                {
-                    serde_json::json!({
-                        "id": guild.id().to_string(),
-                        "unavailable": true
-                    })
-                }
-            })
+            .map(|guild| guild_id_to_json(guild.id()))
+            .chain(self.0.iter().unavailable_guilds().map(guild_id_to_json))
             .collect();
 
-        ready.insert(
-            String::from("guilds"),
-            OwnedValue::Array(unavailable_guilds),
-        );
+        ready.insert(String::from("guilds"), OwnedValue::Array(guilds));
 
         Payload {
             d: Event::Ready(ready),
