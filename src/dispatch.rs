@@ -57,7 +57,11 @@ pub async fn events(
         let payload = match shard.next().await {
             Some(Ok(Message::Text(payload))) => payload,
             Some(Ok(Message::Close(_))) if SHUTDOWN.load(Ordering::Relaxed) => return,
-            Some(Ok(Message::Close(_))) => continue,
+            Some(Ok(Message::Close(_))) => {
+                tracing::info!("Shard {shard_id} got a close message");
+
+                continue;
+            }
             Some(Err(e)) => {
                 tracing::error!("Error receiving message: {e}");
                 continue;

@@ -5,15 +5,15 @@ use serde::Serialize;
 use serde_json::Value as OwnedValue;
 #[cfg(feature = "simd-json")]
 use simd_json::OwnedValue;
-use twilight_cache_inmemory::{InMemoryCache, InMemoryCacheStats, UpdateCache};
+use twilight_cache_inmemory::{DefaultCacheModels, InMemoryCache, InMemoryCacheStats, UpdateCache};
 use twilight_model::{
     channel::{message::Sticker, Channel, StageInstance},
     gateway::{
-        payload::incoming::{GuildCreate, GuildDelete},
+        payload::incoming::GuildCreate,
         presence::{Presence, UserOrId},
         OpCode,
     },
-    guild::{Emoji, Guild, Member, Role},
+    guild::{Emoji, Guild, Member, Role, UnavailableGuild},
     id::{
         marker::{GuildMarker, UserMarker},
         Id,
@@ -38,7 +38,6 @@ pub struct Payload {
 pub enum Event {
     Ready(JsonObject),
     GuildCreate(Box<GuildCreate>),
-    GuildDelete(GuildDelete),
 }
 
 pub struct Guilds(Arc<InMemoryCache>);
@@ -48,7 +47,7 @@ impl Guilds {
         Self(cache)
     }
 
-    pub fn update(&self, value: impl UpdateCache) {
+    pub fn update(&self, value: impl UpdateCache<DefaultCacheModels>) {
         self.0.update(value);
     }
 
@@ -309,18 +308,11 @@ impl Guilds {
         self.0.iter().guilds().map(move |guild| {
             *sequence += 1;
 
-            if guild.unavailable() {
-                let guild_delete = GuildDelete {
+            let guild_create = if guild.unavailable() {
+                GuildCreate::Unavailable(UnavailableGuild {
                     id: guild.id(),
                     unavailable: true,
-                };
-
-                Payload {
-                    d: Event::GuildDelete(guild_delete),
-                    op: OpCode::Dispatch,
-                    t: String::from("GUILD_DELETE"),
-                    s: *sequence,
-                }
+                })
             } else {
                 let guild_channels = self.channels_in_guild(guild.id());
                 let presences = self.presences_in_guild(guild.id());
@@ -384,14 +376,14 @@ impl Guilds {
                     widget_enabled: guild.widget_enabled(),
                 };
 
-                let guild_create = GuildCreate(new_guild);
+                GuildCreate::Available(new_guild)
+            };
 
-                Payload {
-                    d: Event::GuildCreate(Box::new(guild_create)),
-                    op: OpCode::Dispatch,
-                    t: String::from("GUILD_CREATE"),
-                    s: *sequence,
-                }
+            Payload {
+                d: Event::GuildCreate(Box::new(guild_create)),
+                op: OpCode::Dispatch,
+                t: String::from("GUILD_CREATE"),
+                s: *sequence,
             }
         })
     }

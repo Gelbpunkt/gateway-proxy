@@ -1,4 +1,3 @@
-#![feature(lazy_cell)]
 #![deny(clippy::pedantic, clippy::nursery)]
 #![allow(
     clippy::cast_possible_truncation,

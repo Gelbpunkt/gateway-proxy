@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-base64 = "0.21"
+base64 = "0.22"
 bytes = "1"
 flate2 = { version = "1.0", default-features = false }
 futures-util = { version = "0.3", default-features = false, features = [
@@ -25,8 +25,8 @@ hyper-util = { version = "0.1", default-features = false, features = [
 ] }
 inotify = { version = "0.10", default-features = false, features = ["stream"] }
 itoa = "1.0"
-metrics = { version = "0.22", default-features = false }
-metrics-exporter-prometheus = { version = "0.13", default-features = false }
+metrics = { version = "0.23", default-features = false }
+metrics-exporter-prometheus = { version = "0.15", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
     "override",
 ] }
@@ -43,7 +43,7 @@ tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread",
     "signal",
 ] }
-tokio-websockets = { version = "0.5", default-features = false, features = [
+tokio-websockets = { version = "0.8", default-features = false, features = [
     "server",
 ] }
 tracing = { version = "0.1", default-features = false, features = ["log"] }
@@ -51,16 +51,18 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "fmt",
     "std",
 ] }
-twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false }
-twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+twilight-cache-inmemory = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "0.16", default-features = false }
+twilight-gateway = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "0.16", default-features = false, features = [
     "rustls-webpki-roots",
+    "rustls-aws_lc_rs",
 ] }
-twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+twilight-gateway-queue = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "0.16", default-features = false, features = [
 ] }
-twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom", default-features = false, features = [
+twilight-http = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "0.16", default-features = false, features = [
     "rustls-webpki-roots",
+    "rustls-aws_lc_rs",
 ] }
-twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "15-custom" }
+twilight-model = { git = "https://github.com/Gelbpunkt/twilight.git", branch = "0.16" }
 
 [features]
 default = ["simd"]
