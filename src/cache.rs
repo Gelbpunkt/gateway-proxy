@@ -2,18 +2,18 @@
 use halfbrown::hashmap;
 use serde::Serialize;
 #[cfg(not(feature = "simd-json"))]
-use serde_json::Value as OwnedValue;
+use serde_json::{to_string, Value as OwnedValue};
 #[cfg(feature = "simd-json")]
-use simd_json::OwnedValue;
+use simd_json::{to_string, OwnedValue};
 use twilight_cache_inmemory::{DefaultCacheModels, InMemoryCache, InMemoryCacheStats, UpdateCache};
 use twilight_model::{
     channel::{message::Sticker, Channel, StageInstance},
     gateway::{
-        payload::incoming::GuildCreate,
+        payload::incoming::GuildDelete,
         presence::{Presence, UserOrId},
         OpCode,
     },
-    guild::{scheduled_event::GuildScheduledEvent, Emoji, Guild, Member, Role, UnavailableGuild},
+    guild::{scheduled_event::GuildScheduledEvent, Emoji, Guild, Member, Role},
     id::{
         marker::{GuildMarker, UserMarker},
         Id,
@@ -26,18 +26,11 @@ use std::sync::Arc;
 use crate::model::JsonObject;
 
 #[derive(Serialize)]
-pub struct Payload {
-    pub d: Event,
+pub struct Payload<T> {
+    pub d: T,
     pub op: OpCode,
-    pub t: String,
+    pub t: &'static str,
     pub s: usize,
-}
-
-#[derive(Serialize, Clone)]
-#[serde(untagged)]
-pub enum Event {
-    Ready(JsonObject),
-    GuildCreate(Box<GuildCreate>),
 }
 
 pub struct Guilds(Arc<InMemoryCache>);
@@ -55,7 +48,11 @@ impl Guilds {
         self.0.stats()
     }
 
-    pub fn get_ready_payload(&self, mut ready: JsonObject, sequence: &mut usize) -> Payload {
+    pub fn get_ready_payload(
+        &self,
+        mut ready: JsonObject,
+        sequence: &mut usize,
+    ) -> Payload<JsonObject> {
         *sequence += 1;
 
         let guild_id_to_json = |guild_id: Id<GuildMarker>| {
@@ -94,9 +91,9 @@ impl Guilds {
         ready.insert(String::from("guilds"), OwnedValue::Array(guilds));
 
         Payload {
-            d: Event::Ready(ready),
+            d: ready,
             op: OpCode::Dispatch,
-            t: String::from("READY"),
+            t: "READY",
             s: *sequence,
         }
     }
@@ -323,15 +320,21 @@ impl Guilds {
     pub fn get_guild_payloads<'a>(
         &'a self,
         sequence: &'a mut usize,
-    ) -> impl Iterator<Item = Payload> + 'a {
+    ) -> impl Iterator<Item = String> + 'a {
         self.0.iter().guilds().map(move |guild| {
             *sequence += 1;
 
-            let guild_create = if guild.unavailable() {
-                GuildCreate::Unavailable(UnavailableGuild {
-                    id: guild.id(),
-                    unavailable: true,
+            if guild.unavailable() {
+                to_string(&Payload {
+                    d: GuildDelete {
+                        id: guild.id(),
+                        unavailable: true,
+                    },
+                    op: OpCode::Dispatch,
+                    t: "GUILD_DELETE",
+                    s: *sequence,
                 })
+                .unwrap()
             } else {
                 let guild_channels = self.channels_in_guild(guild.id());
                 let presences = self.presences_in_guild(guild.id());
@@ -397,14 +400,13 @@ impl Guilds {
                     widget_enabled: guild.widget_enabled(),
                 };
 
-                GuildCreate::Available(new_guild)
-            };
-
-            Payload {
-                d: Event::GuildCreate(Box::new(guild_create)),
-                op: OpCode::Dispatch,
-                t: String::from("GUILD_CREATE"),
-                s: *sequence,
+                to_string(&Payload {
+                    d: new_guild,
+                    op: OpCode::Dispatch,
+                    t: "GUILD_CREATE",
+                    s: *sequence,
+                })
+                .unwrap()
             }
         })
     }

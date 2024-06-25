@@ -28,7 +28,6 @@ use tracing::{debug, error, info, trace, warn};
 use std::{convert::Infallible, future::ready, net::SocketAddr, sync::Arc};
 
 use crate::{
-    cache::Event,
     config::CONFIG,
     deserializer::{GatewayEvent, SequenceInfo},
     model::{Identify, Resume},
@@ -135,9 +134,9 @@ async fn forward_shard(
             .get_ready_payload(ready_payload, &mut seq);
 
         // Overwrite the session ID in the READY
-        if let Event::Ready(payload) = &mut ready_payload.d {
-            payload.insert(String::from("session_id"), OwnedValue::String(session_id));
-        }
+        ready_payload
+            .d
+            .insert(String::from("session_id"), OwnedValue::String(session_id));
 
         if let Ok(serialized) = to_string(&ready_payload) {
             debug!("[Shard {shard_id}] Sending newly created READY");
@@ -146,12 +145,8 @@ async fn forward_shard(
 
         // Send GUILD_CREATE/GUILD_DELETEs based on guild availability
         for payload in shard_status.guilds.get_guild_payloads(&mut seq) {
-            if let Ok(serialized) = to_string(&payload) {
-                trace!(
-                    "[Shard {shard_id}] Sending newly created GUILD_CREATE/GUILD_DELETE payload",
-                );
-                let _res = stream_writer.send(Message::text(serialized));
-            };
+            trace!("[Shard {shard_id}] Sending newly created GUILD_CREATE/GUILD_DELETE payload");
+            let _res = stream_writer.send(Message::text(payload));
         }
     } else {
         let _res = stream_writer.send(Message::text(RESUMED.to_string()));
