@@ -13,7 +13,7 @@ use twilight_model::{
         presence::{Presence, UserOrId},
         OpCode,
     },
-    guild::{Emoji, Guild, Member, Role, UnavailableGuild},
+    guild::{scheduled_event::GuildScheduledEvent, Emoji, Guild, Member, Role, UnavailableGuild},
     id::{
         marker::{GuildMarker, UserMarker},
         Id,
@@ -80,7 +80,14 @@ impl Guilds {
             .0
             .iter()
             .guilds()
-            .map(|guild| guild_id_to_json(guild.id()))
+            .filter_map(|guild| {
+                if guild.unavailable() {
+                    // Will be part of unavailable_guilds iterator
+                    None
+                } else {
+                    Some(guild_id_to_json(guild.id()))
+                }
+            })
             .chain(self.0.iter().unavailable_guilds().map(guild_id_to_json))
             .collect();
 
@@ -207,6 +214,18 @@ impl Guilds {
             .unwrap_or_default()
     }
 
+    fn scheduled_events_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildScheduledEvent> {
+        self.0
+            .guild_scheduled_events(guild_id)
+            .map(|reference| {
+                reference
+                    .iter()
+                    .filter_map(|event_id| Some(self.0.scheduled_event(*event_id)?.value().clone()))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
     fn stage_instances_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<StageInstance> {
         self.0
             .guild_stage_instances(guild_id)
@@ -319,6 +338,7 @@ impl Guilds {
                 let emojis = self.emojis_in_guild(guild.id());
                 let members = self.members_in_guild(guild.id());
                 let roles = self.roles_in_guild(guild.id());
+                let scheduled_events = self.scheduled_events_in_guild(guild.id());
                 let stage_instances = self.stage_instances_in_guild(guild.id());
                 let stickers = self.stickers_in_guild(guild.id());
                 let voice_states = self.voice_states_in_guild(guild.id());
@@ -338,13 +358,14 @@ impl Guilds {
                     emojis,
                     explicit_content_filter: guild.explicit_content_filter(),
                     features: guild.features().cloned().collect(),
+                    guild_scheduled_events: scheduled_events,
                     icon: guild.icon().map(ToOwned::to_owned),
                     id: guild.id(),
                     joined_at: guild.joined_at(),
                     large: guild.large(),
                     max_members: guild.max_members(),
                     max_presences: guild.max_presences(),
-                    max_video_channel_users: None, // Not in the cache model
+                    max_video_channel_users: guild.max_video_channel_users(),
                     member_count: guild.member_count(),
                     members,
                     mfa_level: guild.mfa_level(),

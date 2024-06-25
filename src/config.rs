@@ -57,6 +57,7 @@ pub struct Cache {
     pub current_member: bool,
     pub members: bool,
     pub roles: bool,
+    pub scheduled_events: bool,
     pub stage_instances: bool,
     pub stickers: bool,
     pub users: bool,
@@ -72,6 +73,7 @@ impl Default for Cache {
             emojis: false,
             members: false,
             roles: true,
+            scheduled_events: false,
             stage_instances: false,
             stickers: false,
             users: false,
@@ -112,6 +114,10 @@ impl From<Cache> for EventTypeFlags {
 
         if cache.emojis {
             flags |= Self::GUILD_EMOJIS_UPDATE;
+        }
+
+        if cache.scheduled_events {
+            flags |= Self::GUILD_SCHEDULED_EVENTS;
         }
 
         if cache.stage_instances {
@@ -158,6 +164,10 @@ impl From<Cache> for ResourceType {
 
         if cache.roles {
             resource_types |= Self::ROLE;
+        }
+
+        if cache.scheduled_events {
+            resource_types |= Self::GUILD_SCHEDULED_EVENT;
         }
 
         if cache.stage_instances {

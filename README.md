@@ -43,6 +43,7 @@ Create a file `config.json` and fill in these fields as you wish:
     "current_member": false,
     "members": false,
     "roles": false,
+    "scheduled_events": false,
     "stage_instances": false,
     "stickers": false,
     "users": false,
