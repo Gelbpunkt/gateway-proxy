@@ -36,7 +36,7 @@ pub fn server(
 
     // Track whether the client requested zlib encoding in the query
     // string parameters
-    let use_zlib = query.map_or(false, |q| q.contains("compress=zlib-stream"));
+    let use_zlib = query.is_some_and(|q| q.contains("compress=zlib-stream"));
 
     let mut response = Response::new(Full::default());
 

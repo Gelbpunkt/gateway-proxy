@@ -44,6 +44,7 @@ impl Guilds {
         self.0.update(value);
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     pub fn stats(&self) -> InMemoryCacheStats {
         self.0.stats()
     }

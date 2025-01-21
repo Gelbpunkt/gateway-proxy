@@ -50,7 +50,7 @@ fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) 
             .compress_vec(&input[offset..], output, FlushCompress::None)
             .unwrap()
         {
-            Status::Ok => continue,
+            Status::Ok => {}
             Status::BufError => output.reserve(4096),
             Status::StreamEnd => break,
         }
@@ -58,12 +58,12 @@ fn compress_full(compressor: &mut Compress, output: &mut Vec<u8>, input: &[u8]) 
 
     while !output.ends_with(&TRAILER) {
         output.reserve(5);
-        match compressor
+        if compressor
             .compress_vec(&[], output, FlushCompress::Sync)
             .unwrap()
+            == Status::StreamEnd
         {
-            Status::Ok | Status::BufError => continue,
-            Status::StreamEnd => break,
+            break;
         }
     }
 }
