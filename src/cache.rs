@@ -73,23 +73,22 @@ impl Guilds {
             }
         };
 
-        let guilds = Box::new(
-            self.0
-                .iter()
-                .guilds()
-                .filter_map(|guild| {
-                    if guild.unavailable() == Some(true) {
-                        // Will be part of unavailable_guilds iterator
-                        None
-                    } else {
-                        Some(guild_id_to_json(guild.id()))
-                    }
-                })
-                .chain(self.0.iter().unavailable_guilds().map(guild_id_to_json))
-                .collect(),
-        );
+        let guilds: Vec<_> = self
+            .0
+            .iter()
+            .guilds()
+            .filter_map(|guild| {
+                if guild.unavailable() == Some(true) {
+                    // Will be part of unavailable_guilds iterator
+                    None
+                } else {
+                    Some(guild_id_to_json(guild.id()))
+                }
+            })
+            .chain(self.0.iter().unavailable_guilds().map(guild_id_to_json))
+            .collect();
 
-        ready.insert(String::from("guilds"), OwnedValue::Array(guilds));
+        ready.insert(String::from("guilds"), OwnedValue::Array(guilds.into()));
 
         Payload {
             d: ready,
