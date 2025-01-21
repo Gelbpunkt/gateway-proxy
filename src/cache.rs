@@ -58,11 +58,10 @@ impl Guilds {
         let guild_id_to_json = |guild_id: Id<GuildMarker>| {
             #[cfg(feature = "simd-json")]
             {
-                hashmap! {
+                OwnedValue::Object(Box::new(hashmap! {
                     String::from("id") => guild_id.to_string().into(),
                     String::from("unavailable") => true.into(),
-                }
-                .into()
+                }))
             }
             #[cfg(not(feature = "simd-json"))]
             {
@@ -73,20 +72,21 @@ impl Guilds {
             }
         };
 
-        let guilds = self
-            .0
-            .iter()
-            .guilds()
-            .filter_map(|guild| {
-                if guild.unavailable() {
-                    // Will be part of unavailable_guilds iterator
-                    None
-                } else {
-                    Some(guild_id_to_json(guild.id()))
-                }
-            })
-            .chain(self.0.iter().unavailable_guilds().map(guild_id_to_json))
-            .collect();
+        let guilds = Box::new(
+            self.0
+                .iter()
+                .guilds()
+                .filter_map(|guild| {
+                    if guild.unavailable() == Some(true) {
+                        // Will be part of unavailable_guilds iterator
+                        None
+                    } else {
+                        Some(guild_id_to_json(guild.id()))
+                    }
+                })
+                .chain(self.0.iter().unavailable_guilds().map(guild_id_to_json))
+                .collect(),
+        );
 
         ready.insert(String::from("guilds"), OwnedValue::Array(guilds));
 
@@ -213,11 +213,19 @@ impl Guilds {
 
     fn scheduled_events_in_guild(&self, guild_id: Id<GuildMarker>) -> Vec<GuildScheduledEvent> {
         self.0
-            .guild_scheduled_events(guild_id)
+            .scheduled_events(guild_id)
             .map(|reference| {
                 reference
                     .iter()
-                    .filter_map(|event_id| Some(self.0.scheduled_event(*event_id)?.value().clone()))
+                    .filter_map(|event_id| {
+                        Some(
+                            self.0
+                                .scheduled_event(*event_id)?
+                                .value()
+                                .resource()
+                                .clone(),
+                        )
+                    })
                     .collect()
             })
             .unwrap_or_default()
@@ -324,11 +332,11 @@ impl Guilds {
         self.0.iter().guilds().map(move |guild| {
             *sequence += 1;
 
-            if guild.unavailable() {
+            if guild.unavailable() == Some(true) {
                 to_string(&Payload {
                     d: GuildDelete {
                         id: guild.id(),
-                        unavailable: true,
+                        unavailable: Some(true),
                     },
                     op: OpCode::Dispatch,
                     t: "GUILD_DELETE",
@@ -368,6 +376,7 @@ impl Guilds {
                     large: guild.large(),
                     max_members: guild.max_members(),
                     max_presences: guild.max_presences(),
+                    max_stage_video_channel_users: guild.max_stage_video_channel_users(),
                     max_video_channel_users: guild.max_video_channel_users(),
                     member_count: guild.member_count(),
                     members,
@@ -392,7 +401,7 @@ impl Guilds {
                     system_channel_flags: guild.system_channel_flags(),
                     system_channel_id: guild.system_channel_id(),
                     threads,
-                    unavailable: false,
+                    unavailable: Some(false),
                     vanity_url_code: guild.vanity_url_code().map(ToString::to_string),
                     verification_level: guild.verification_level(),
                     voice_states,

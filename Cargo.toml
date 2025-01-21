@@ -10,6 +10,7 @@ bytes = "1"
 flate2 = { version = "1.0", default-features = false }
 futures-util = { version = "0.3", default-features = false, features = [
     "sink",
+    "std",
 ] }
 halfbrown = { version = "0.2", features = ["serde"] }
 http-body-util = "0.1"
@@ -23,10 +24,10 @@ hyper-util = { version = "0.1", default-features = false, features = [
     "http1",
     "http2",
 ] }
-inotify = { version = "0.10", default-features = false, features = ["stream"] }
+inotify = { version = "0.11", default-features = false, features = ["stream"] }
 itoa = "1.0"
-metrics = { version = "0.23", default-features = false }
-metrics-exporter-prometheus = { version = "0.15", default-features = false }
+metrics = { version = "0.24", default-features = false }
+metrics-exporter-prometheus = { version = "0.16", default-features = false }
 mimalloc = { version = "0.1", default-features = false, features = [
     "override",
 ] }
@@ -36,14 +37,16 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = [
     "std",
 ], optional = true }
-simd-json = { version = "0.13", default-features = false, features = [
+simd-json = { version = "0.14", default-features = false, features = [
     "serde_impl",
 ], optional = true }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread",
     "signal",
 ] }
-tokio-websockets = { version = "0.8", default-features = false, features = [
+tokio-websockets = { version = "0.11", default-features = false, features = [
+    "nightly",
+    "simd",
     "server",
 ] }
 tracing = { version = "0.1", default-features = false, features = ["log"] }

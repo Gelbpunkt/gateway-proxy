@@ -63,7 +63,7 @@ impl<'a> GatewayEvent<'a> {
         (self.op, self.sequence, self.event_type)
     }
 
-    fn find_event_type(input: &'a str) -> Option<EventTypeInfo> {
+    fn find_event_type(input: &'a str) -> Option<EventTypeInfo<'a>> {
         // We're going to search for the event type key from the start. Discord
         // always puts it at the front before the D key from some testing of
         // several hundred payloads.

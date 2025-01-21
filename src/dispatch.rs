@@ -1,7 +1,7 @@
 use futures_util::StreamExt;
 use itoa::Buffer;
 #[cfg(feature = "simd-json")]
-use simd_json::prelude::ValueAsMutContainer;
+use simd_json::prelude::ValueAsMutArray;
 use tokio::{sync::broadcast, time::Instant};
 use tracing::{debug, trace};
 use twilight_gateway::{
